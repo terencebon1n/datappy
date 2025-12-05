@@ -20,5 +20,6 @@ def main() -> None:
             case _:
                 raise Exception
 
+
 if __name__ == "__main__":
     main()
