@@ -28,7 +28,9 @@ def extract(url: str) -> None:
         return
 
     try:
-        session: Session = sessionmaker(bind=create_engine(postgres_url, client_encoding="utf8"))()
+        session: Session = sessionmaker(
+            bind=create_engine(postgres_url, client_encoding="utf8")
+        )()
         with zipfile.ZipFile(zip_content, "r") as zip_ref:
             file_names = sorted(zip_ref.namelist())
             if file_names != sorted(FileNames):

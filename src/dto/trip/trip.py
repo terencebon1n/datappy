@@ -57,7 +57,7 @@ class TripModel(GTFSModelBase[Trip]):
         primaryjoin=foreign(service_id) == remote(CalendarDateModel.service_id),
         foreign_keys=[service_id],
         remote_side=[CalendarDateModel.service_id],
-        viewonly=True 
+        viewonly=True,
     )
 
     @classmethod
