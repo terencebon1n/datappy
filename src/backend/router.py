@@ -3,22 +3,29 @@ import asyncio
 import requests
 from fastapi import APIRouter, WebSocket
 from google.transit import gtfs_realtime_pb2
+from sqlalchemy import select, distinct
 
 from ..dto.vehicle import Position, Trip, Vehicle
+from ..dto.route import RouteModel
 from .websocket import ConnectionManager
 
-test_router = APIRouter()
-
+gtfs_router = APIRouter()
 
 manager = ConnectionManager()
 
 
-@test_router.get("/")
+@gtfs_router.get("/")
 async def root() -> dict[str, str]:
     return {"message": "Hello Yes"}
 
 
-@test_router.websocket("/vehicle-position")
+@gtfs_router.get("/route-type")
+async def route_type() -> dict[str, str]:
+    query = select(distinct(RouteModel.type))
+    # need a method to handle session asynchronously
+
+
+@gtfs_router.websocket("/vehicle-position")
 async def vehicle_position(websocket: WebSocket) -> None:
     await manager.connect(websocket)
     feed = gtfs_realtime_pb2.FeedMessage()
@@ -52,7 +59,7 @@ async def vehicle_position(websocket: WebSocket) -> None:
         await asyncio.sleep(5)
 
 
-@test_router.get("/alert")
+@gtfs_router.get("/alert")
 async def alert() -> dict[str, str]:
     feed = gtfs_realtime_pb2.FeedMessage()
     url = "https://data.montpellier3m.fr/TAM_MMM_GTFSRT/Alert.pb"
@@ -63,7 +70,7 @@ async def alert() -> dict[str, str]:
     return {"message": "Alert"}
 
 
-@test_router.get("/trip-update")
+@gtfs_router.get("/trip-update")
 async def trip_update() -> dict[str, str]:
     feed = gtfs_realtime_pb2.FeedMessage()
     url = "https://data.montpellier3m.fr/TAM_MMM_GTFSRT/TripUpdate.pb"
@@ -74,6 +81,6 @@ async def trip_update() -> dict[str, str]:
     return {"message": "Trip Update"}
 
 
-@test_router.get("/test")
+@gtfs_router.get("/test")
 async def test() -> dict[str, str]:
     return {"message": "test test"}
