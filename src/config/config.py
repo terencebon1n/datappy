@@ -2,12 +2,21 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class PostgresConfigModel(BaseModel):
+    pool_size: int
+    max_overflow: int
+    pool_recycle: int
+    pool_timeout: int
+
+
 class PostgresModel(BaseModel):
     host: str
     port: int = 5432
     database: str = "postgres"
     username: str
     password: str
+
+    config: PostgresConfigModel
 
 
 class Settings(BaseSettings):

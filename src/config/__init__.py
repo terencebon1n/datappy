@@ -11,11 +11,11 @@ if _env == "prod":
     settings = ProductionSettings()  # type: ignore[call-arg]
 
 
-postgres_url = URL.create(
-    "postgresql+psycopg",
-    settings.postgres.username,
-    settings.postgres.password,
-    settings.postgres.host,
-    settings.postgres.port,
-    settings.postgres.database,
+postgres_url: URL = URL.create(
+    drivername="postgresql+psycopg",
+    username=settings.postgres.username,
+    password=settings.postgres.password,
+    host=settings.postgres.host,
+    port=settings.postgres.port,
+    database=settings.postgres.database,
 )
