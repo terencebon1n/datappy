@@ -1,7 +1,6 @@
 import sys
 
 from .backend import BackEnd
-from .init import Init
 
 
 def main() -> None:
@@ -9,9 +8,6 @@ def main() -> None:
 
     for arg in args:
         match arg:
-            case "init":
-                init = Init()
-                init.start()
             case "backend":
                 backend = BackEnd()
                 backend.start()

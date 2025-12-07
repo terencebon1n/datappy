@@ -12,8 +12,12 @@ from ..config import settings
 
 class DatabaseManager:
     db_url: URL
-    _engine: Engine | AsyncEngine
-    _session: Session | AsyncSession
+
+    _engine: Engine
+    _session: Session
+
+    _async_engine: AsyncEngine
+    _async_session: AsyncSession
 
     def __init__(self, is_async: bool = False) -> None:
         self.is_async: bool = is_async
@@ -27,8 +31,9 @@ class DatabaseManager:
             database=settings.postgres.database,
         )
 
-        if is_async:
-            self._engine = create_async_engine(
+    def initialize(self) -> None:
+        if self.is_async:
+            self._async_engine = create_async_engine(
                 url=self.db_url,
                 pool_size=settings.postgres.config.pool_size,
                 max_overflow=settings.postgres.config.max_overflow,
@@ -36,8 +41,8 @@ class DatabaseManager:
                 pool_timeout=settings.postgres.config.pool_timeout,
                 echo=False,
             )
-            self._session = async_sessionmaker(
-                self._engine,
+            self._async_session = async_sessionmaker(
+                self._async_engine,
                 expire_on_commit=False,
             )()
         else:
@@ -48,15 +53,23 @@ class DatabaseManager:
             )()
 
     @property
-    def engine(self) -> Engine | AsyncEngine:
+    def engine(self) -> Engine:
         return self._engine
 
     @property
-    def session(self) -> Session | AsyncSession:
+    def async_engine(self) -> AsyncEngine:
+        return self._async_engine
+
+    @property
+    def session(self) -> Session:
         return self._session
+
+    @property
+    def async_session(self) -> AsyncSession:
+        return self._async_session
 
     async def close(self) -> None:
         if self.is_async:
-            await self._engine.dispose()
+            await self._async_engine.dispose()
         else:
             self._engine.dispose()
