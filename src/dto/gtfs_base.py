@@ -1,13 +1,25 @@
-from collections.abc import Iterable
-from typing import Optional, Type, TypeVar, cast
+import csv
+import logging
 
-from sqlalchemy import MetaData, delete
+from abc import abstractmethod
+from collections.abc import Iterable
+from typing import Optional, Type, TypeVar, cast, get_args, get_origin
+
+from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase, Session
 
 from .gtfs_protocol import GTFSDataclassProtocol
 
 TModel = TypeVar("TModel")
 TDataclass = TypeVar("TDataclass", bound=GTFSDataclassProtocol)
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: \t %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 
 class GTFSModelBase[TDataclass](DeclarativeBase):
@@ -17,8 +29,6 @@ class GTFSModelBase[TDataclass](DeclarativeBase):
 
     @classmethod
     def _resolve_dataclass_type(cls) -> type[TDataclass]:
-        from typing import get_args, get_origin
-
         dataclass_type: Optional[Type[TDataclass]] = None
 
         for base in cls.__orig_bases__:  # type: ignore[attr-defined]
@@ -46,24 +56,27 @@ class GTFSContainerBase[TDataclass, TModel]:
     def __init__(self) -> None:
         self.items = []
 
+    @property
+    def _resolve_dataclass(cls) -> TDataclass:
+        return get_args(cls.__orig_bases__[0])[0]  # type: ignore[attr-defined]
+
+    @property
+    def _resolve_model(cls) -> TModel:
+        return get_args(cls.__orig_bases__[0])[1]  # type: ignore[attr-defined]
+
+    @property
+    def _resolve_dataclass_type(cls) -> Type[TDataclass]:
+        return cast(Type[TDataclass], cls._resolve_dataclass)
+
+    @property
+    def _resolve_model_type(cls) -> Type[TModel]:
+        return cast(Type[TModel], cls._resolve_model)
+
     def to_models_iterable(self) -> Iterable[TModel]:
         return (item.to_model() for item in self.items)  # type: ignore[attr-defined]
 
-    def delete(self, session: Session) -> None:
-        try:
-            if not self.items:
-                return
-
-            item_dataclass: TDataclass = self.items[0]
-            item_model: TModel = item_dataclass.to_model()  # type: ignore[attr-defined]
-
-            delete_stmt = delete(item_model.__table__)  # type: ignore[attr-defined]
-            session.execute(delete_stmt)
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            print(f"Error during initial table deletion: {e}")
-            raise e
+    @abstractmethod
+    def extract(self, file_data: csv.DictReader[str]) -> None: ...
 
     def load(self, session: Session, batch_size: int = 1000) -> None:
         if not self.items:
@@ -94,3 +107,7 @@ class GTFSContainerBase[TDataclass, TModel]:
             except Exception as e:
                 session.rollback()
                 raise e
+
+        logger.info(
+            f"Initialized {len(self.items)} {self._resolve_dataclass_type.__name__}"
+        )
