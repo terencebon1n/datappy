@@ -1,7 +1,6 @@
 import csv
 import io
 import zipfile
-import logging
 
 import requests
 from sqlalchemy import create_engine
@@ -17,14 +16,6 @@ from ..dto.transfer import TransferContainer
 from ..dto.trip import TripContainer
 from .enums.file_names import FileNames
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
-logger = logging.getLogger(__name__)
-
 
 def extract(url: str) -> None:
     try:
@@ -33,7 +24,7 @@ def extract(url: str) -> None:
 
         zip_content = io.BytesIO(response.content)
     except requests.exceptions.RequestException as e:
-        logger.info(f"Error downloading file: {e}")
+        print(f"Error downloading file: {e}")
         return
 
     try:
@@ -55,50 +46,29 @@ def extract(url: str) -> None:
                             agency_container = AgencyContainer()
                             agency_container.extract(file_data)
                             agency_container.load(session)
-                            logger.info(
-                                f"Initialized {len(agency_container.items)} agencies"
-                            )
                         case FileNames.CALENDAR_DATE:
                             calendar_date_container = CalendarDateContainer()
                             calendar_date_container.extract(file_data)
                             calendar_date_container.load(session)
-                            logger.info(
-                                f"Initialized {len(calendar_date_container.items)} calendar dates"
-                            )
                         case FileNames.ROUTE:
                             route_container = RouteContainer()
                             route_container.extract(file_data)
                             route_container.load(session)
-                            logger.info(
-                                f"Initialized {len(route_container.items)} routes"
-                            )
                         case FileNames.STOP:
                             stop_container = StopContainer()
                             stop_container.extract(file_data)
                             stop_container.load(session)
-                            logger.info(
-                                f"Initialized {len(stop_container.items)} stops"
-                            )
                         case FileNames.STOP_TIME:
                             stop_time_container = StopTimeContainer()
                             stop_time_container.extract(file_data)
                             stop_time_container.load(session)
-                            logger.info(
-                                f"Initialized {len(stop_time_container.items)} stop times"
-                            )
                         case FileNames.TRANSFER:
                             transfer_container = TransferContainer()
                             transfer_container.extract(file_data)
                             transfer_container.load(session)
-                            logger.info(
-                                f"Initialized {len(transfer_container.items)} transfers"
-                            )
                         case FileNames.TRIP:
                             trip_container = TripContainer()
                             trip_container.extract(file_data)
                             trip_container.load(session)
-                            logger.info(
-                                f"Initialized {len(trip_container.items)} trips"
-                            )
     except Exception:
         raise Exception

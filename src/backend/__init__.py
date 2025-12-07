@@ -9,6 +9,8 @@ from ..dto.gtfs_base import GTFSModelBase
 from .router import gtfs_router
 
 db_manager = DatabaseManager(is_async=False)
+async_db_manager = DatabaseManager(is_async=True)
+init = Init()
 
 
 async def initialize_database():
@@ -17,7 +19,10 @@ async def initialize_database():
     await db_manager.close()
 
 
-async_db_manager = DatabaseManager(is_async=True)
+async def drop_database():
+    db_manager.initialize()
+    GTFSModelBase.metadata.drop_all(db_manager.engine)
+    await db_manager.close()
 
 
 @asynccontextmanager
@@ -25,10 +30,10 @@ async def lifespan(app: FastAPI):
     # Load
     await initialize_database()
     async_db_manager.initialize()
-    init = Init()
     init.start()
     yield
     # Clean up
+    await drop_database()
     await async_db_manager.close()
 
 
