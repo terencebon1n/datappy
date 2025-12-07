@@ -1,10 +1,9 @@
 from collections.abc import Iterable
 from typing import Optional, Type, TypeVar, cast
 
-from sqlalchemy import MetaData, create_engine, delete
+from sqlalchemy import MetaData, delete
 from sqlalchemy.orm import DeclarativeBase, Session
 
-from ..config import postgres_url
 from .gtfs_protocol import GTFSDataclassProtocol
 
 TModel = TypeVar("TModel")
@@ -15,7 +14,6 @@ class GTFSModelBase[TDataclass](DeclarativeBase):
     item: TDataclass
 
     metadata = MetaData(schema="gtfs")
-    engine = create_engine(postgres_url, client_encoding="utf8")
 
     @classmethod
     def _resolve_dataclass_type(cls) -> type[TDataclass]:
@@ -47,7 +45,6 @@ class GTFSContainerBase[TDataclass, TModel]:
 
     def __init__(self) -> None:
         self.items = []
-        GTFSModelBase.metadata.create_all(GTFSModelBase.engine)
 
     def to_models_iterable(self) -> Iterable[TModel]:
         return (item.to_model() for item in self.items)  # type: ignore[attr-defined]
