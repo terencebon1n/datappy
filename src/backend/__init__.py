@@ -2,26 +2,29 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
+from sqlalchemy.schema import CreateSchema
 
-from ..database import DatabaseManager
-from ..init import Init
 from ..dto.gtfs_base import GTFSModelBase
+from .dependencies import async_db_manager, db_manager, init
 from .router import gtfs_router
-
-db_manager = DatabaseManager(is_async=False)
-async_db_manager = DatabaseManager(is_async=True)
-init = Init()
 
 
 async def initialize_database():
     db_manager.initialize()
+    db_manager.session.execute(CreateSchema("gtfs", if_not_exists=True))
+    db_manager.session.commit()
+    """
     GTFSModelBase.metadata.create_all(db_manager.engine)
+    init.load_gtfs(db_manager.session)
+    """
     await db_manager.close()
 
 
 async def drop_database():
     db_manager.initialize()
+    """
     GTFSModelBase.metadata.drop_all(db_manager.engine)
+    """
     await db_manager.close()
 
 
@@ -30,10 +33,9 @@ async def lifespan(app: FastAPI):
     # Load
     await initialize_database()
     async_db_manager.initialize()
-    init.start()
     yield
     # Clean up
-    await drop_database()
+    # await drop_database()
     await async_db_manager.close()
 
 

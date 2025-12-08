@@ -3,10 +3,8 @@ import io
 import zipfile
 
 import requests
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from ..config import postgres_url
 from ..dto.agency import AgencyContainer
 from ..dto.calendar_date import CalendarDateContainer
 from ..dto.route import RouteContainer
@@ -17,7 +15,7 @@ from ..dto.trip import TripContainer
 from .enums.file_names import FileNames
 
 
-def extract(url: str) -> None:
+def extract(url: str, session: Session) -> None:
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
@@ -28,9 +26,6 @@ def extract(url: str) -> None:
         return
 
     try:
-        session: Session = sessionmaker(
-            bind=create_engine(postgres_url, client_encoding="utf8")
-        )()
         with zipfile.ZipFile(zip_content, "r") as zip_ref:
             file_names = sorted(zip_ref.namelist())
             if file_names != sorted(FileNames):

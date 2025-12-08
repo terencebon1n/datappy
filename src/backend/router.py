@@ -1,12 +1,18 @@
 import asyncio
+import time
 
 import requests
 from fastapi import APIRouter, WebSocket
 from google.transit import gtfs_realtime_pb2
-from sqlalchemy import select, distinct
+from sqlalchemy import distinct, select
 
-from ..dto.vehicle import Position, Trip, Vehicle
 from ..dto.route import RouteModel
+from ..dto.stop import StopModel
+from ..dto.stop_time import StopTimeModel
+from ..dto.trip import TripModel
+from ..dto.vehicle import Position, Trip, Vehicle
+from ..enums.route_type import RouteType
+from .dependencies import async_db_manager
 from .websocket import ConnectionManager
 
 gtfs_router = APIRouter()
@@ -20,9 +26,53 @@ async def root() -> dict[str, str]:
 
 
 @gtfs_router.get("/route-type")
-async def route_type() -> dict[str, str]:
+async def route_type() -> list[str]:
     query = select(distinct(RouteModel.type))
-    # need a method to handle session asynchronously
+    results = await async_db_manager.async_session.execute(query)
+
+    return [RouteType(route_type).name for route_type in results.scalars().all()]
+
+
+@gtfs_router.get("/conveyance/{route_type}")
+async def conveyange(route_type: str):
+    t0 = time.perf_counter()
+
+    query = select(RouteModel.id, RouteModel.short_name, RouteModel.long_name).where(
+        RouteModel.type == RouteType[route_type.upper()].value
+    )
+    results = await async_db_manager.async_session.execute(query)
+
+    t1 = time.perf_counter()
+
+    elapsed = t1 - t0
+    return [
+        {
+            "id": conveyance.id,
+            "short_name": conveyance.short_name,
+            "long_name": conveyance.long_name,
+            "time": elapsed * 1000,
+        }
+        for conveyance in results.all()
+    ]
+
+
+@gtfs_router.get("/stop/{route_type}/{conveyance}")
+async def get_stops(route_type: str, conveyance: str):
+    query = (
+        select(distinct(StopModel.name))
+        .join(StopTimeModel, StopModel.id == StopTimeModel.stop_id, isouter=True)
+        .join(TripModel, StopTimeModel.trip_id == TripModel.id, isouter=True)
+        .join(RouteModel, TripModel.route_id == RouteModel.id, isouter=True)
+        .where(
+            RouteModel.type == RouteType[route_type.upper()].value,
+            RouteModel.short_name == conveyance,
+        )
+        .order_by(StopModel.name)
+    )
+
+    results = await async_db_manager.async_session.execute(query)
+
+    return [stop for stop in results.scalars().all()]
 
 
 @gtfs_router.websocket("/vehicle-position")
