@@ -70,6 +70,8 @@ class DatabaseManager:
 
     async def close(self) -> None:
         if self.is_async:
+            await self._async_session.close()
             await self._async_engine.dispose()
         else:
+            self._session.close()
             self._engine.dispose()

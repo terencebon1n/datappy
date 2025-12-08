@@ -16,7 +16,7 @@ TDataclass = TypeVar("TDataclass", bound=GTFSDataclassProtocol)
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(levelname)s: \t %(message)s",
+    format="%(levelname)s:\t  %(message)s",
 )
 
 logger = logging.getLogger(__name__)
@@ -78,8 +78,12 @@ class GTFSContainerBase[TDataclass, TModel]:
     @abstractmethod
     def extract(self, file_data: csv.DictReader[str]) -> None: ...
 
-    def load(self, session: Session, batch_size: int = 1000) -> None:
+    def load(self, session: Session, batch_size: int = 10000) -> None:
+        logger.info(f"Initializing {self._resolve_dataclass_type.__name__}")
         if not self.items:
+            logger.info(
+                f"No data to initialize {self._resolve_dataclass_type.__name__}"
+            )
             return
 
         item_models = self.to_models_iterable()
@@ -95,6 +99,9 @@ class GTFSContainerBase[TDataclass, TModel]:
                 try:
                     session.add_all(batch)
                     session.commit()
+                    logger.info(
+                        f"Initialized {i + 1} {self._resolve_dataclass_type.__name__}"
+                    )
                 except Exception as e:
                     session.rollback()
                     raise e
