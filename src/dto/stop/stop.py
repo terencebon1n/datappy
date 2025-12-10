@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import csv
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple
 
-from sqlalchemy import Boolean, Float, Integer, String
+from sqlalchemy import Boolean, Float, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..gtfs_base import GTFSContainerBase, GTFSModelBase
@@ -52,6 +52,10 @@ class StopModel(GTFSModelBase[Stop]):
     location_type: Mapped[str] = mapped_column(String)
     parent_station: Mapped[Optional[str]] = mapped_column(String)
     wheelchair_boarding: Mapped[bool] = mapped_column(Boolean)
+
+    __table_args__: Tuple = (
+        Index("idx_stop_name_hash", "name", postgresql_using="hash"),
+    )
 
     @classmethod
     def from_dataclass(cls, stop: Stop) -> StopModel:
