@@ -13,29 +13,27 @@ async def initialize_database():
     db_manager.initialize()
     db_manager.session.execute(CreateSchema("gtfs", if_not_exists=True))
     db_manager.session.commit()
-    """
     GTFSModelBase.metadata.create_all(db_manager.engine)
     init.load_gtfs(db_manager.session)
-    """
     await db_manager.close()
 
 
 async def drop_database():
     db_manager.initialize()
-    """
     GTFSModelBase.metadata.drop_all(db_manager.engine)
-    """
     await db_manager.close()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load
-    await initialize_database()
+    # await initialize_database()
     async_db_manager.initialize()
     yield
     # Clean up
+
     # await drop_database()
+
     await async_db_manager.close()
 
 

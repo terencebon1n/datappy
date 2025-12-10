@@ -1,10 +1,11 @@
 import asyncio
-import time
 
 import requests
 from fastapi import APIRouter, WebSocket
 from google.transit import gtfs_realtime_pb2
 from sqlalchemy import distinct, select
+from sqlalchemy.orm import aliased
+from sqlalchemy.sql.expression import literal_column
 
 from ..dto.route import RouteModel
 from ..dto.stop import StopModel
@@ -26,7 +27,7 @@ async def root() -> dict[str, str]:
 
 
 @gtfs_router.get("/route-type")
-async def route_type() -> list[str]:
+async def get_route_types() -> list[str]:
     query = select(distinct(RouteModel.type))
     results = await async_db_manager.async_session.execute(query)
 
@@ -34,23 +35,17 @@ async def route_type() -> list[str]:
 
 
 @gtfs_router.get("/conveyance/{route_type}")
-async def conveyange(route_type: str):
-    t0 = time.perf_counter()
-
+async def get_conveyances(route_type: str):
     query = select(RouteModel.id, RouteModel.short_name, RouteModel.long_name).where(
         RouteModel.type == RouteType[route_type.upper()].value
     )
     results = await async_db_manager.async_session.execute(query)
 
-    t1 = time.perf_counter()
-
-    elapsed = t1 - t0
     return [
         {
             "id": conveyance.id,
             "short_name": conveyance.short_name,
             "long_name": conveyance.long_name,
-            "time": elapsed * 1000,
         }
         for conveyance in results.all()
     ]
@@ -73,6 +68,37 @@ async def get_stops(route_type: str, conveyance: str):
     results = await async_db_manager.async_session.execute(query)
 
     return [stop for stop in results.scalars().all()]
+
+
+@gtfs_router.get("/direction/{conveyance}/{origin}/{destination}")
+async def get_direction(conveyance: str, origin: str, destination: str):
+    st_origin = aliased(StopTimeModel, name="st_origin")
+    st_destination = aliased(StopTimeModel, name="st_destination")
+    s_origin = aliased(StopModel, name="s_origin")
+    s_destination = aliased(StopModel, name="s_destination")
+
+    exists_subquery = (
+        select(literal_column("1"))
+        .select_from(st_destination)
+        .join(s_destination, s_destination.id == st_destination.stop_id)
+        .where(s_destination.name == destination)
+        .join(st_origin, st_origin.trip_id == st_destination.trip_id)
+        .join(s_origin, s_origin.id == st_origin.stop_id)
+        .where(s_origin.name == origin)
+        .where(st_destination.stop_sequence > st_origin.stop_sequence)
+        .where(st_destination.trip_id == TripModel.id)
+    ).exists()
+
+    query = (
+        select(distinct(TripModel.direction_id))
+        .where(TripModel.route_id == conveyance)
+        .where(exists_subquery)
+    )
+    print(query)
+
+    results = await async_db_manager.async_session.execute(query)
+
+    return results.scalars().first()
 
 
 @gtfs_router.websocket("/vehicle-position")
