@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import csv
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship, remote
 
 from ..calendar_date import CalendarDateModel
@@ -58,6 +58,13 @@ class TripModel(GTFSModelBase[Trip]):
         foreign_keys=[service_id],
         remote_side=[CalendarDateModel.service_id],
         viewonly=True,
+    )
+
+    __table_args__: Tuple = (
+        Index("idx_trip_route_id_btree", "route_id", postgresql_using="btree"),
+        Index(
+            "idx_trip_pkey_route_id_btree", "id", "route_id", postgresql_using="btree"
+        ),
     )
 
     @classmethod
