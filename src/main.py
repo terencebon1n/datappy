@@ -1,6 +1,8 @@
 import sys
+import asyncio
 
 from .backend import BackEnd
+from .init import Init
 
 
 def main() -> None:
@@ -11,6 +13,9 @@ def main() -> None:
             case "backend":
                 backend = BackEnd()
                 backend.start()
+            case "gtfs-feed":
+                init = Init()
+                asyncio.run(init.load_gtfs_rt())
             case "frontend":
                 print("frontend starting")
             case _:

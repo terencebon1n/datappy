@@ -19,8 +19,13 @@ class PostgresModel(BaseModel):
     config: PostgresConfigModel
 
 
+class KafkaModel(BaseModel):
+    brokers: str
+
+
 class Settings(BaseSettings):
     postgres: PostgresModel
+    kafka: KafkaModel
 
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",

@@ -8,14 +8,16 @@ from google.transit import gtfs_realtime_pb2
 from sqlalchemy import and_, distinct, select
 from sqlalchemy.orm import aliased
 
-from ..dto.calendar_date import CalendarDateModel
-from ..dto.route import RouteModel
-from ..dto.stop import StopModel
-from ..dto.stop_time import StopTimeModel
-from ..dto.trip import TripModel
-from ..dto.update import TripUpdate
-from ..dto.update.stop_time import StopTime
-from ..dto.vehicle import Position, Trip, Vehicle
+from ..dto.gtfs import (
+    CalendarDateModel,
+    RouteModel,
+    StopModel,
+    StopTimeModel,
+    TripModel,
+)
+from ..dto.gtfs_rt import TripUpdate, Vehicle, Trip
+from ..dto.gtfs_rt.update.stop_time import StopTime
+from ..dto.gtfs_rt.vehicle import Position
 from ..enums.route_type import RouteType
 from .dependencies import async_db_manager
 from .websocket import ConnectionManager
@@ -160,7 +162,6 @@ async def get_vehicles_rt(conveyance: str, direction: str):
 
 @gtfs_router.get("/trip-updates-rt/{conveyance}/{direction}/{stop_id}")
 async def get_trip_updates_rt(conveyance: str, direction: str, stop_id: str):
-
     feed = gtfs_realtime_pb2.FeedMessage()
     url = "https://data.montpellier3m.fr/TAM_MMM_GTFSRT/TripUpdate.pb"
     response = requests.get(url)

@@ -5,17 +5,19 @@ import zipfile
 import requests
 from sqlalchemy.orm import Session
 
-from ..dto.agency import AgencyContainer
-from ..dto.calendar_date import CalendarDateContainer
-from ..dto.route import RouteContainer
-from ..dto.stop import StopContainer
-from ..dto.stop_time import StopTimeContainer
-from ..dto.transfer import TransferContainer
-from ..dto.trip import TripContainer
+from ..dto.gtfs import (
+    AgencyContainer,
+    CalendarDateContainer,
+    RouteContainer,
+    StopContainer,
+    StopTimeContainer,
+    TransferContainer,
+    TripContainer,
+)
 from .enums.file_names import FileNames
 
 
-def extract(url: str, session: Session) -> None:
+def extract_gtfs(url: str, session: Session) -> None:
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
