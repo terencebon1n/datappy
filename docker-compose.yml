@@ -19,14 +19,31 @@ services:
   kafka-broker:
     image: apache/kafka:latest
     container_name: broker
+    ports:
+      - "9092:9092" 
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://localhost:9092,CONTROLLER://localhost:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      
+      # FIX 1: Define two distinct listeners. CONTROLLER must be present.
+      # EXTERNAL for clients, CONTROLLER for KRaft internal use.
+      KAFKA_LISTENERS: EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      
+      # FIX 2: Advertise both listeners using host-accessible addresses. 
+      # Since clients only use 9092, we only expose 9092 in ports.
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://localhost:9092,CONTROLLER://localhost:9093
+      
+      # FIX 3: Specify the listener names for the controller role (addressing the error)
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER 
+      
+      # FIX 4: Specify which listener is used for broker-to-broker communication
+      KAFKA_INTER_BROKER_LISTENER_NAME: EXTERNAL 
+      
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      
+      # FIX 5: Use the correct controller address and port
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1

@@ -1,4 +1,4 @@
-from .update import TripUpdate, TripUpdateContainer
+from .update import TripUpdate, TripUpdateContainer, TripUpdateEventProducer
 
 
-__all__ = ["TripUpdate", "TripUpdateContainer"]
+__all__ = ["TripUpdate", "TripUpdateContainer", "TripUpdateEventProducer"]

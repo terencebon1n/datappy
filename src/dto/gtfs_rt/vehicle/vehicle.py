@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import requests
 
-from ..gtfs_rt_base import GTFSRTContainerBase
+from ..gtfs_rt_base import GTFSRTContainerBase, GTFSRTProducerBase
 from ..trip import Trip
 from .position import Position
 
@@ -14,6 +14,18 @@ class Vehicle:
     position: Position
     current_status: str
     timestamp: int
+
+
+class VehicleEventProducer(GTFSRTProducerBase[Vehicle]):
+    def __init__(self) -> None:
+        super().__init__()
+
+    async def send_dataclass(self, event: Vehicle):
+        await self.producer.send(
+            topic=self._resolve_dataclass_type.__name__,
+            key=f"{event.trip.route_id}_{event.trip.direction_id}".encode("utf-8"),
+            value=self.encoder.encode(event),
+        )
 
 
 class VehicleContainer(GTFSRTContainerBase[Vehicle]):
