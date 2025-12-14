@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import FastAPI
 from sqlalchemy.schema import CreateSchema
 
-from ..dto.gtfs_base import GTFSModelBase
+from ..dto.gtfs.gtfs_base import GTFSModelBase
 from .dependencies import async_db_manager, db_manager, init
 from .router import gtfs_router
 

@@ -1,0 +1,51 @@
+from dataclasses import dataclass
+
+import requests
+
+from ..gtfs_rt_base import GTFSRTContainerBase
+from ..trip import Trip
+from .stop_time import StopTime
+
+
+@dataclass(frozen=True)
+class TripUpdate:
+    id: str
+    trip: Trip
+    stop_times: list[StopTime]
+
+
+class TripUpdateContainer(GTFSRTContainerBase[TripUpdate]):
+    items: list[TripUpdate]
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    async def extract(self, url: str) -> list[TripUpdate]:
+        response = requests.get(url)
+        self.feed.ParseFromString(response.content)
+        for entity in self.feed.entity:
+            stop_time_list: list[StopTime] = []
+            for stop_time in entity.trip_update.stop_time_update:
+                stop_time_list.append(
+                    StopTime(
+                        stop_id=stop_time.stop_id,
+                        arrival_delay=stop_time.arrival.delay,
+                        arrival_time=stop_time.arrival.time,
+                        departure_delay=stop_time.departure.delay,
+                        departure_time=stop_time.departure.time,
+                        schedule_relationship=stop_time.schedule_relationship,
+                    )
+                )
+            self.items.append(
+                TripUpdate(
+                    id=entity.id,
+                    trip=Trip(
+                        id=entity.trip_update.trip.trip_id,
+                        schedule_relationship=entity.trip_update.trip.schedule_relationship,
+                        route_id=entity.trip_update.trip.route_id,
+                        direction_id=entity.trip_update.trip.direction_id,
+                    ),
+                    stop_times=stop_time_list,
+                )
+            )
+        return self.items
