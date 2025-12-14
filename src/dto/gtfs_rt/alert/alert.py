@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import requests
 
-from ..gtfs_rt_base import GTFSRTContainerBase
+from ..gtfs_rt_base import GTFSRTContainerBase, GTFSRTProducerBase
 from ..period import Period
 from .description import Description
 from .header import Header
@@ -16,6 +16,18 @@ class Alert:
     informed_entity: InformedEntity
     header: Header
     description: Description
+
+
+class AlertEventProducer(GTFSRTProducerBase[Alert]):
+    def __init__(self) -> None:
+        super().__init__()
+
+    async def send_dataclass(self, event: Alert):
+        await self.producer.send(
+            topic="alerts",
+            key=f"{event.informed_entity.route_id}".encode("utf-8"),
+            value=self.encoder.encode(event),
+        )
 
 
 class AlertContainer(GTFSRTContainerBase[Alert]):

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import requests
 
-from ..gtfs_rt_base import GTFSRTContainerBase
+from ..gtfs_rt_base import GTFSRTContainerBase, GTFSRTProducerBase
 from ..trip import Trip
 from .stop_time import StopTime
 
@@ -12,6 +12,32 @@ class TripUpdate:
     id: str
     trip: Trip
     stop_times: list[StopTime]
+
+
+@dataclass(frozen=True)
+class MinimizedTripUpdate:
+    id: str
+    trip: Trip
+    stop_time: StopTime
+
+
+class TripUpdateEventProducer(GTFSRTProducerBase[TripUpdate]):
+    def __init__(self) -> None:
+        super().__init__()
+
+    async def send_dataclass(self, event: TripUpdate):
+        for stop_time in event.stop_times:
+            await self.producer.send(
+                topic=self._resolve_dataclass_type.__name__,
+                key=f"{event.trip.route_id}_{event.trip.direction_id}_{stop_time.stop_id}".encode(
+                    "utf-8"
+                ),
+                value=self.encoder.encode(
+                    MinimizedTripUpdate(
+                        id=event.id, trip=event.trip, stop_time=stop_time
+                    )
+                ),
+            )
 
 
 class TripUpdateContainer(GTFSRTContainerBase[TripUpdate]):
