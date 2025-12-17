@@ -1,0 +1,24 @@
+FROM python:3.13-slim
+
+# Versioning
+ENV SPARK_VERSION=4.1.0
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+ENV SPARK_HOME=/opt/spark
+ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
+
+# Install Java 21 & Minimal Tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-21-jdk-headless curl wget procps && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Download Spark 4.1.0 (Standalone bundle is easiest even without Hadoop)
+RUN wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+    tar -xzf spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+    mv spark-${SPARK_VERSION}-bin-hadoop3 $SPARK_HOME && \
+    rm spark-${SPARK_VERSION}-bin-hadoop3.tgz
+
+# Install PySpark + gRPC (Required for remote connection)
+RUN pip install --no-cache-dir pyspark==${SPARK_VERSION} grpcio grpcio-status
+
+WORKDIR /app
+EXPOSE 15002 8080 7077
