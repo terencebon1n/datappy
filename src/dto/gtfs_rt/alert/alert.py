@@ -42,16 +42,18 @@ class AlertContainer(GTFSRTContainerBase[Alert]):
         for entity in self.feed.entity:
             self.items.append(
                 Alert(
-                    id=entity.alert.id,
+                    id=entity.id,
                     active_period=Period(
-                        start=entity.alert.active_period.start,
-                        end=entity.alert.active_period.end,
+                        start=entity.alert.active_period[0].start,
+                        end=entity.alert.active_period[0].end,
                     ),
                     informed_entity=InformedEntity(
-                        route_id=entity.alert.informed_entity.route_id
+                        route_id=entity.alert.informed_entity[0].route_id
                     ),
-                    header=Header(text=entity.alert.header.text),
-                    description=Description(text=entity.alert.description.text),
+                    header=Header(text=entity.alert.header_text.translation[0].text),
+                    description=Description(
+                        text=entity.alert.description_text.translation[0].text
+                    ),
                 )
             )
         return self.items
