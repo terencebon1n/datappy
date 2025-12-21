@@ -2,18 +2,15 @@ from dataclasses import dataclass
 import time
 
 import requests
-from pyspark.sql import Row, SparkSession
-from pyspark.sql.functions import col, from_json
+from pyspark.sql import SparkSession
+import pyspark.sql.functions as sf
 from pyspark.sql.types import (
-    ArrayType,
-    DoubleType,
     IntegerType,
     StringType,
     StructField,
     StructType,
 )
 
-from ....config import settings
 from ..gtfs_rt_base import GTFSRTContainerBase, GTFSRTProducerBase
 from ..trip import Trip
 from .stop_time import StopTime
@@ -58,7 +55,7 @@ class StopTripUpdate:
 
 trip_data_schema = StructType(
     [
-        StructField("trip_id", StringType(), True),
+        StructField("id", StringType(), True),
         StructField("schedule_relationship", StringType(), True),
         StructField("route_id", StringType(), True),
         StructField("direction_id", IntegerType(), True),
@@ -101,28 +98,50 @@ class TripUpdateSparkStream:
         )
 
     def deserialize(self):
-        new_stream = self.stream.select(
-            col("key").cast("string").alias("key"),
-            from_json(col("value").cast("string"), trip_update_value_schema).alias(
-                "value"
-            ),
-        ).select(
-            col("key"),
-            col("value.trip.route_id").alias("route_id"),
-            col("value.trip.direction_id").alias("direction_id"),
-            col("value.stop_time.stop_id").alias("stop_id"),
-            col("value.stop_time.departure_time").alias("departure_time"),
-            col("value.stop_time.departure_delay").alias("departure_delay"),
-            col("value.stop_time.arrival_time").alias("arrival_time"),
-            col("value.stop_time.arrival_delay").alias("arrival_delay"),
+        new_stream = (
+            self.stream.select(
+                sf.col("key").cast("string").alias("key"),
+                sf.from_json(
+                    sf.col("value").cast("string"), trip_update_value_schema
+                ).alias("value"),
+            )
+            .select(
+                sf.col("key"),
+                sf.col("value.trip.route_id").alias("route_id"),
+                sf.col("value.trip.direction_id").alias("direction_id"),
+                sf.col("value.trip.id").alias("trip_id"),
+                sf.col("value.stop_time.stop_id").alias("stop_id"),
+                sf.col("value.stop_time.departure_time").alias("departure_time"),
+                sf.col("value.stop_time.departure_delay").alias("departure_delay"),
+                sf.col("value.stop_time.arrival_time").alias("arrival_time"),
+                sf.col("value.stop_time.arrival_delay").alias("arrival_delay"),
+            )
+            .groupBy(
+                "key",
+            )
+            .agg(
+                sf.collect_set(
+                    sf.struct(
+                        "trip_id",
+                        "departure_time",
+                        "departure_delay",
+                        "arrival_time",
+                        "arrival_delay",
+                    )
+                ).alias("stop_times")
+            )
+            .withColumn("stop_times", sf.to_json(sf.col("stop_times")))
         )
 
-        # query = new_stream.writeStream.queryName("trip_updates").format("memory").start()
+        query = (
+            new_stream.writeStream.outputMode("update")
+            .queryName("trip_updates")
+            .format("memory")
+            .start()
+        )
 
-        new_stream.writeStream.queryName("trip_updates").format("memory").start()
-
-        for _ in range(5):
-            self.spark.sql("SELECT * FROM trip_updates").show()
+        for _ in range(20):
+            self.spark.sql("SELECT * FROM trip_updates ORDER BY key").show()
             time.sleep(5)
 
 

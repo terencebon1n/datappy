@@ -24,7 +24,7 @@ class AlertEventProducer(GTFSRTProducerBase[Alert]):
 
     async def send_dataclass(self, event: Alert):
         await self.producer.send(
-            topic="alerts",
+            topic=self._resolve_dataclass_type.__name__,
             key=f"{event.informed_entity.route_id}".encode("utf-8"),
             value=self.encoder.encode(event),
         )
