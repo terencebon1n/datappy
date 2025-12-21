@@ -1,6 +1,7 @@
 import msgspec
 
 from aiokafka import AIOKafkaProducer
+from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 
 from abc import abstractmethod
 from typing import Type, TypeVar, cast, get_args
@@ -14,6 +15,9 @@ class GTFSRTProducerBase[TDataclass]:
     producer: AIOKafkaProducer
 
     def __init__(self) -> None:
+        self.admin = AIOKafkaAdminClient(
+            bootstrap_servers=settings.kafka.brokers,
+        )
         self.producer = AIOKafkaProducer(
             bootstrap_servers=settings.kafka.brokers,
         )
@@ -28,6 +32,7 @@ class GTFSRTProducerBase[TDataclass]:
         return cast(Type[TDataclass], cls._resolve_dataclass)
 
     async def __aenter__(self):
+        await self.admin.start()
         await self.producer.start()
         return self
 
@@ -36,6 +41,16 @@ class GTFSRTProducerBase[TDataclass]:
             await self.producer.stop()
 
         return False
+
+    async def create_topic(self):
+        new_topics = [
+            NewTopic(
+                name=self._resolve_dataclass_type.__name__,
+                num_partitions=1,
+                replication_factor=1,
+            )
+        ]
+        await self.admin.create_topics(new_topics=new_topics)
 
     @abstractmethod
     async def send_dataclass(self, event: TDataclass): ...

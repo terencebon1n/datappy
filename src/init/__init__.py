@@ -23,6 +23,7 @@ class Init:
         )
 
         async with TripUpdateEventProducer() as trip_update_kafka_producer:
+            await trip_update_kafka_producer.create_topic()
             for trip_update in trip_update_list:
                 await trip_update_kafka_producer.send_dataclass(trip_update)
 
@@ -32,6 +33,7 @@ class Init:
         )
 
         async with VehicleEventProducer() as vehicle_kafka_producer:
+            await vehicle_kafka_producer.create_topic()
             for vehicle in vehicle_list:
                 await vehicle_kafka_producer.send_dataclass(vehicle)
 
@@ -39,6 +41,7 @@ class Init:
         alert_list: list[Alert] = await alert_container.extract(TAM_MMM_GTFS_RT.ALERT)
 
         async with AlertEventProducer() as alert_kafka_producer:
+            await alert_kafka_producer.create_topic()
             for alert in alert_list:
                 await alert_kafka_producer.send_dataclass(alert)
 

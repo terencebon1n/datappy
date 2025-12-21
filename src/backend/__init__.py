@@ -27,7 +27,7 @@ async def drop_database():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load
-    # await initialize_database()
+    await initialize_database()
     async_db_manager.initialize()
     yield
     # Clean up
