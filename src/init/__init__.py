@@ -5,7 +5,7 @@ from ..dto.gtfs_rt.update import (
     TripUpdateContainer,
     TripUpdate,
     TripUpdateEventProducer,
-    TripUpdateSparkStream,
+    StopUpdateStream,
 )
 from ..dto.gtfs_rt.vehicle import Vehicle, VehicleContainer, VehicleEventProducer
 from ..enums.url import TAM_MMM_GTFS_RT
@@ -45,5 +45,5 @@ class Init:
             for alert in alert_list:
                 await alert_kafka_producer.send_dataclass(alert)
 
-        test_stream = TripUpdateSparkStream()
+        test_stream = StopUpdateStream("StopUpdateStream")
         test_stream.deserialize()

@@ -1,3 +1,3 @@
-from .trip import Trip
+from .trip import Trip, TripColumns
 
-__all__ = ["Trip"]
+__all__ = ["Trip", "TripColumns"]

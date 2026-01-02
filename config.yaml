@@ -1,0 +1,10 @@
+kafka:
+  bootstrap_servers: "broker:29092"
+  starting_offsets: "earliest"
+  max_offsets_per_trigger: 1000
+  security:
+    protocol: "SSL"
+
+spark:
+  remote_url: "sc://localhost:15002"
+
