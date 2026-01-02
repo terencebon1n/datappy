@@ -2,18 +2,27 @@ from dataclasses import dataclass
 import time
 
 import requests
-from pyspark.sql import SparkSession
 import pyspark.sql.functions as sf
 from pyspark.sql.types import (
-    IntegerType,
-    StringType,
     StructField,
     StructType,
 )
 
-from ..gtfs_rt_base import GTFSRTContainerBase, GTFSRTProducerBase
-from ..trip import Trip
-from .stop_time import StopTime
+from ..gtfs_rt_base import GTFSRTContainerBase, GTFSRTProducerBase, GTFSRTStreamBase
+from ..spark_base import SparkColumns
+from ..trip import Trip, TripColumns
+from .stop_time import StopTime, StopTimeColumns
+
+
+class KafkaRawColumns(SparkColumns):
+    KEY = "key"
+    VALUE = "value"
+
+
+class TripUpdateColumns(SparkColumns):
+    ID = "id"
+    TRIP = "trip"
+    STOP_TIME = "stop_time"
 
 
 @dataclass(frozen=True)
@@ -29,104 +38,54 @@ class MinimizedTripUpdate:
     trip: Trip
     stop_time: StopTime
 
+    @classmethod
+    def schema(cls) -> StructType:
+        TU = TripUpdateColumns
 
-@dataclass(frozen=True)
-class StopArrival:
-    trip_id: str
-    time: int
-    delay: int
-
-
-@dataclass(frozen=True)
-class StopDeparture:
-    trip_id: str
-    time: int
-    delay: int
-
-
-@dataclass(frozen=True)
-class StopTripUpdate:
-    route_id: str
-    direction_id: str
-    stop_id: str
-    arrival: list[StopArrival]
-    departure: list[StopDeparture]
-
-
-trip_data_schema = StructType(
-    [
-        StructField("id", StringType(), True),
-        StructField("schedule_relationship", StringType(), True),
-        StructField("route_id", StringType(), True),
-        StructField("direction_id", IntegerType(), True),
-    ]
-)
-
-stop_time_data_schema = StructType(
-    [
-        StructField("stop_id", StringType(), True),
-        StructField("arrival_delay", IntegerType(), True),
-        StructField("arrival_time", IntegerType(), True),
-        StructField("departure_delay", IntegerType(), True),
-        StructField("departure_time", IntegerType(), True),
-        StructField("schedule_relationship", StringType(), True),
-    ]
-)
-
-trip_update_value_schema = StructType(
-    [
-        StructField("trip", trip_data_schema, True),
-        StructField("stop_time", stop_time_data_schema, True),
-    ]
-)
-
-
-class TripUpdateSparkStream:
-    def __init__(self) -> None:
-        self.spark = (
-            SparkSession.builder.remote("sc://localhost:15002")
-            .appName("TripUpdateSparkStream")
-            .getOrCreate()
+        return StructType(
+            [
+                StructField(TU.TRIP, Trip.schema(), True),
+                StructField(TU.STOP_TIME, StopTime.schema(), True),
+            ]
         )
 
-        self.stream = (
-            self.spark.readStream.format("kafka")
-            .option("kafka.bootstrap.servers", "broker:29092")
-            .option("subscribe", "TripUpdate")
-            .option("startingOffsets", "earliest")
-            .load()
-        )
+
+class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
+    def __init__(self, appname: str) -> None:
+        super().__init__(appname)
 
     def deserialize(self):
+        KR, TU, T, ST = KafkaRawColumns, TripUpdateColumns, TripColumns, StopTimeColumns
+
         new_stream = (
             self.stream.select(
-                sf.col("key").cast("string").alias("key"),
+                KR.KEY.col.cast("string").alias(KR.KEY),
                 sf.from_json(
-                    sf.col("value").cast("string"), trip_update_value_schema
-                ).alias("value"),
+                    KR.VALUE.col.cast("string"), MinimizedTripUpdate.schema()
+                ).alias(KR.VALUE),
             )
             .select(
-                sf.col("key"),
-                sf.col("value.trip.route_id").alias("route_id"),
-                sf.col("value.trip.direction_id").alias("direction_id"),
-                sf.col("value.trip.id").alias("trip_id"),
-                sf.col("value.stop_time.stop_id").alias("stop_id"),
-                sf.col("value.stop_time.departure_time").alias("departure_time"),
-                sf.col("value.stop_time.departure_delay").alias("departure_delay"),
-                sf.col("value.stop_time.arrival_time").alias("arrival_time"),
-                sf.col("value.stop_time.arrival_delay").alias("arrival_delay"),
+                KR.KEY.col,
+                (KR.VALUE / TU.TRIP / T.ROUTE_ID).alias(T.ROUTE_ID),
+                (KR.VALUE / TU.TRIP / T.DIRECTION_ID).alias(T.DIRECTION_ID),
+                (KR.VALUE / TU.TRIP / T.ID).alias(T.TRIP_ID),
+                (KR.VALUE / TU.STOP_TIME / ST.STOP_ID).alias(ST.STOP_ID),
+                (KR.VALUE / TU.STOP_TIME / ST.DEPARTURE_TIME).alias(ST.DEPARTURE_TIME),
+                (KR.VALUE / TU.STOP_TIME / ST.DEPARTURE_DELAY).alias(
+                    ST.DEPARTURE_DELAY
+                ),
+                (KR.VALUE / TU.STOP_TIME / ST.ARRIVAL_TIME).alias(ST.ARRIVAL_TIME),
+                (KR.VALUE / TU.STOP_TIME / ST.ARRIVAL_DELAY).alias(ST.ARRIVAL_DELAY),
             )
-            .groupBy(
-                "key",
-            )
+            .groupBy(T.ROUTE_ID, T.DIRECTION_ID, ST.STOP_ID)
             .agg(
                 sf.collect_set(
                     sf.struct(
-                        "trip_id",
-                        "departure_time",
-                        "departure_delay",
-                        "arrival_time",
-                        "arrival_delay",
+                        T.TRIP_ID,
+                        ST.DEPARTURE_TIME,
+                        ST.DEPARTURE_DELAY,
+                        ST.ARRIVAL_TIME,
+                        ST.ARRIVAL_DELAY,
                     )
                 ).alias("stop_times")
             )
@@ -141,7 +100,7 @@ class TripUpdateSparkStream:
         )
 
         for _ in range(20):
-            self.spark.sql("SELECT * FROM trip_updates ORDER BY key").show()
+            self.spark.sql("SELECT * FROM trip_updates ORDER BY route_id").show()
             time.sleep(5)
 
 

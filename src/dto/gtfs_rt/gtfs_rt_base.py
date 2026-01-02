@@ -2,13 +2,41 @@ import msgspec
 
 from aiokafka import AIOKafkaProducer
 from aiokafka.admin import AIOKafkaAdminClient, NewTopic
+from pyspark.sql import SparkSession, DataFrame
 
 from abc import abstractmethod
 from typing import Type, TypeVar, cast, get_args
 from google.transit import gtfs_realtime_pb2
-from ...config import settings
+from ...config import settings, AppConfig
 
 TDataclass = TypeVar("TDataclass")
+
+
+class GTFSRTStreamBase[TDataclass]:
+    spark: SparkSession
+    stream: DataFrame
+
+    def __init__(self, appname: str) -> None:
+        kafka_config = AppConfig.from_yaml("config.yaml").kafka.to_spark_options()
+        kafka_config["subscribe"] = self._resolve_dataclass_type.__name__
+
+        self.spark = (
+            SparkSession.builder.remote("sc://localhost:15002")
+            .appName(appname)
+            .getOrCreate()
+        )
+
+        self.stream = (
+            self.spark.readStream.format("kafka").options(**kafka_config).load()
+        )
+
+    @property
+    def _resolve_dataclass(cls) -> TDataclass:
+        return get_args(cls.__orig_bases__[0])[0]  # type: ignore[attr-defined]
+
+    @property
+    def _resolve_dataclass_type(cls) -> type[TDataclass]:
+        return cast(Type[TDataclass], cls._resolve_dataclass)
 
 
 class GTFSRTProducerBase[TDataclass]:

@@ -3,6 +3,7 @@ import os
 from sqlalchemy import URL
 
 from .config import ProductionSettings, Settings, StagingSettings
+from .kafka import AppConfig
 
 _env = os.getenv("ENV", "stg")
 
@@ -19,3 +20,5 @@ postgres_url: URL = URL.create(
     port=settings.postgres.port,
     database=settings.postgres.database,
 )
+
+__all__ = ["settings", "postgres_url", "AppConfig"]
