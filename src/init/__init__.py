@@ -1,11 +1,13 @@
+import asyncio
+
 from sqlalchemy.orm import Session
 
 from ..dto.gtfs_rt.alert import Alert, AlertContainer, AlertEventProducer
 from ..dto.gtfs_rt.update import (
-    TripUpdateContainer,
-    TripUpdate,
-    TripUpdateEventProducer,
     StopUpdateStream,
+    TripUpdate,
+    TripUpdateContainer,
+    TripUpdateEventProducer,
 )
 from ..dto.gtfs_rt.vehicle import Vehicle, VehicleContainer, VehicleEventProducer
 from ..enums.url import TAM_MMM_GTFS_RT
@@ -16,34 +18,49 @@ class Init:
     def load_gtfs(self, session: Session) -> None:
         extract_gtfs(TAM_MMM_GTFS_RT.GTFS_ZIP, session)
 
-    async def load_gtfs_rt(self) -> None:
-        trip_update_container = TripUpdateContainer()
-        trip_update_list: list[TripUpdate] = await trip_update_container.extract(
-            TAM_MMM_GTFS_RT.TRIP_UPDATE
-        )
-
-        async with TripUpdateEventProducer() as trip_update_kafka_producer:
+    async def gtfs_rt_producer(self) -> None:
+        try:
+            trip_update_kafka_producer = TripUpdateEventProducer()
+            await trip_update_kafka_producer.start()
             await trip_update_kafka_producer.create_topic()
-            for trip_update in trip_update_list:
-                await trip_update_kafka_producer.send_dataclass(trip_update)
-
-        vehicle_container = VehicleContainer()
-        vehicle_list: list[Vehicle] = await vehicle_container.extract(
-            TAM_MMM_GTFS_RT.VEHICLE_POSITION
-        )
-
-        async with VehicleEventProducer() as vehicle_kafka_producer:
+            vehicle_kafka_producer = VehicleEventProducer()
+            await vehicle_kafka_producer.start()
             await vehicle_kafka_producer.create_topic()
-            for vehicle in vehicle_list:
-                await vehicle_kafka_producer.send_dataclass(vehicle)
-
-        alert_container = AlertContainer()
-        alert_list: list[Alert] = await alert_container.extract(TAM_MMM_GTFS_RT.ALERT)
-
-        async with AlertEventProducer() as alert_kafka_producer:
+            alert_kafka_producer = AlertEventProducer()
+            await alert_kafka_producer.start()
             await alert_kafka_producer.create_topic()
-            for alert in alert_list:
-                await alert_kafka_producer.send_dataclass(alert)
 
+            while True:
+                trip_update_container = TripUpdateContainer()
+                trip_update_list: list[
+                    TripUpdate
+                ] = await trip_update_container.extract(TAM_MMM_GTFS_RT.TRIP_UPDATE)
+                for trip_update in trip_update_list:
+                    await trip_update_kafka_producer.send_dataclass(trip_update)
+
+                vehicle_container = VehicleContainer()
+                vehicle_list: list[Vehicle] = await vehicle_container.extract(
+                    TAM_MMM_GTFS_RT.VEHICLE_POSITION
+                )
+
+                for vehicle in vehicle_list:
+                    await vehicle_kafka_producer.send_dataclass(vehicle)
+
+                alert_container = AlertContainer()
+                alert_list: list[Alert] = await alert_container.extract(
+                    TAM_MMM_GTFS_RT.ALERT
+                )
+
+                for alert in alert_list:
+                    await alert_kafka_producer.send_dataclass(alert)
+
+                await asyncio.sleep(10)
+        except KeyboardInterrupt:
+            await trip_update_kafka_producer.stop()
+            await vehicle_kafka_producer.stop()
+            await alert_kafka_producer.stop()
+
+    def gtfs_rt_consumer(self) -> None:
         test_stream = StopUpdateStream("StopUpdateStream")
-        test_stream.deserialize()
+        query = test_stream.to_redis()
+        query.awaitTermination()

@@ -13,9 +13,12 @@ def main() -> None:
             case "backend":
                 backend = BackEnd()
                 backend.start()
-            case "gtfs-feed":
+            case "producer":
                 init = Init()
-                asyncio.run(init.load_gtfs_rt())
+                asyncio.run(init.gtfs_rt_producer())
+            case "consumer":
+                init = Init()
+                init.gtfs_rt_consumer()
             case "frontend":
                 print("frontend starting")
             case _:

@@ -1,12 +1,14 @@
 from dataclasses import dataclass
-import time
 
-import requests
 import pyspark.sql.functions as sf
+import redis
+import requests
+from pyspark.sql import DataFrame
 from pyspark.sql.types import (
     StructField,
     StructType,
 )
+from pyspark.sql.streaming.query import StreamingQuery
 
 from ..gtfs_rt_base import GTFSRTContainerBase, GTFSRTProducerBase, GTFSRTStreamBase
 from ..spark_base import SparkColumns
@@ -54,10 +56,17 @@ class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
     def __init__(self, appname: str) -> None:
         super().__init__(appname)
 
-    def deserialize(self):
+        self.stream: DataFrame = (
+            self.spark.readStream.format("kafka")
+            .options(**self.config.kafka.to_spark_options())
+            .option("subscribe", self._resolve_dataclass_type.__name__)
+            .load()
+        )
+
+    def process_dataframe(self) -> DataFrame:
         KR, TU, T, ST = KafkaRawColumns, TripUpdateColumns, TripColumns, StopTimeColumns
 
-        new_stream = (
+        return (
             self.stream.select(
                 KR.KEY.col.cast("string").alias(KR.KEY),
                 sf.from_json(
@@ -92,16 +101,46 @@ class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
             .withColumn("stop_times", sf.to_json(sf.col("stop_times")))
         )
 
-        query = (
-            new_stream.writeStream.outputMode("update")
-            .queryName("trip_updates")
-            .format("memory")
+    @staticmethod
+    def _write_to_redis_batch(batch_df: DataFrame, batch_id: int):
+        """
+        Internal worker function to process one micro-batch.
+        """
+
+        def process_partition(partition):
+            # Connect to the 'redis' service defined in your docker-compose
+            r = redis.Redis(host="redis", port=6379, decode_responses=True)
+            pipe = r.pipeline()
+
+            for row in partition:
+                # 1. Create the composite key
+                redis_key = f"{row['route_id']}:{row['direction_id']}:{row['stop_id']}"
+
+                # 2. Overwrite logic
+                # We use a simple SET because stop_times is already a JSON string
+                # from your sf.to_json transformation.
+                pipe.set(redis_key, row["stop_times"])
+
+                # 3. Optional: Set TTL to 5 minutes (300s) so stale real-time data expires
+                pipe.expire(redis_key, 300)
+
+            pipe.execute()
+
+        batch_df.foreachPartition(process_partition)
+
+    def to_redis(self) -> StreamingQuery:
+        """
+        Starts the stream and sinks data to Redis.
+        """
+        processed_df = self.process_dataframe()
+
+        # Using 'update' mode is appropriate here since you are using aggregations (groupBy)
+        return (
+            processed_df.writeStream.outputMode("update")
+            .foreachBatch(self._write_to_redis_batch)
+            .option("checkpointLocation", f"/tmp/checkpoints/{self.__class__.__name__}")
             .start()
         )
-
-        for _ in range(20):
-            self.spark.sql("SELECT * FROM trip_updates ORDER BY route_id").show()
-            time.sleep(5)
 
 
 class TripUpdateEventProducer(GTFSRTProducerBase[TripUpdate]):
