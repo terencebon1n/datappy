@@ -2,7 +2,7 @@ import msgspec
 
 from aiokafka import AIOKafkaProducer
 from aiokafka.admin import AIOKafkaAdminClient, NewTopic
-from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql import SparkSession
 
 from abc import abstractmethod
 from typing import Type, TypeVar, cast, get_args
@@ -14,20 +14,15 @@ TDataclass = TypeVar("TDataclass")
 
 class GTFSRTStreamBase[TDataclass]:
     spark: SparkSession
-    stream: DataFrame
+    config: AppConfig
 
     def __init__(self, appname: str) -> None:
-        kafka_config = AppConfig.from_yaml("config.yaml").kafka.to_spark_options()
-        kafka_config["subscribe"] = self._resolve_dataclass_type.__name__
+        self.config = AppConfig.from_yaml("config.yaml")
 
         self.spark = (
             SparkSession.builder.remote("sc://localhost:15002")
             .appName(appname)
             .getOrCreate()
-        )
-
-        self.stream = (
-            self.spark.readStream.format("kafka").options(**kafka_config).load()
         )
 
     @property
@@ -59,23 +54,39 @@ class GTFSRTProducerBase[TDataclass]:
     def _resolve_dataclass_type(cls) -> type[TDataclass]:
         return cast(Type[TDataclass], cls._resolve_dataclass)
 
-    async def __aenter__(self):
+    async def start(self):
         await self.admin.start()
         await self.producer.start()
         return self
 
-    async def __aexit__(self, exc_type, exc_value, traceback):
+    async def stop(self):
         if self.producer:
             await self.producer.stop()
 
         return False
 
+    async def __aenter__(self):
+        return await self.start()
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        return await self.stop()
+
     async def create_topic(self):
+        configs = {
+            # 1. Enable both deletion and compaction
+            "cleanup.policy": "compact,delete",
+            # 3. Retention time (e.g., 2 minutes)
+            "retention.ms": "12000",
+            # 4. How long to wait before deleting compacted data
+            "delete.retention.ms": "30000",
+        }
+
         new_topics = [
             NewTopic(
                 name=self._resolve_dataclass_type.__name__,
                 num_partitions=1,
                 replication_factor=1,
+                topic_configs=configs,
             )
         ]
         await self.admin.create_topics(new_topics=new_topics)

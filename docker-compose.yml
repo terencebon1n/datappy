@@ -47,6 +47,8 @@ services:
       - "15002:15002"
       - "8080:8080"
       - "7077:7077"
+    volumes:
+      - ./src:/opt/spark/work-dir/src
     environment:
       - SPARK_LOCAL_IP=spark-master
       - SPARK_MASTER_PORT=7077
@@ -54,6 +56,7 @@ services:
       # Force Spark to include the connect jars in the classpath
       - SPARK_DIST_CLASSPATH=/opt/spark/jars/*
       - SPARK_MASTER_OPTS=-Dspark.plugins=org.apache.spark.sql.connect.SparkConnectPlugin -Dspark.connect.grpc.binding.port=15002 -Dspark.connect.grpc.binding.address=0.0.0.0 -Djava.net.preferIPv4Stack=true
+      - PYTHONPATH=$PYTHONPATH:/opt/spark/work-dir
     command: >
       /bin/bash -c "
       /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host spark-master &
@@ -69,6 +72,8 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
+    env_file:
+      - .env
 
   spark-worker:
     build:
@@ -79,12 +84,31 @@ services:
     depends_on:
       spark-master:
         condition: service_healthy
+    volumes:
+        - ./src:/opt/spark/work-dir/src
     environment:
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_LOCAL_IP=spark-worker
+      - PYTHONPATH=$PYTHONPATH:/opt/spark/work-dir
     command: >
       /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
       spark://spark-master:7077
+    env_file:
+      - .env
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - spark-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 networks:
   spark-net:
