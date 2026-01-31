@@ -34,7 +34,7 @@ def extract_gtfs(url: str, session: Session) -> None:
                 raise ValueError("Zip file contains unexpected file names")
             for file_name in FileNames:
                 with zip_ref.open(file_name, mode="r") as file:
-                    text_file = io.TextIOWrapper(file, encoding="utf-8")
+                    text_file = io.TextIOWrapper(file, encoding="utf-8-sig")
                     file_data = csv.DictReader(
                         text_file, delimiter=",", skipinitialspace=True
                     )

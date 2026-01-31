@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,13 @@ from ..dto.gtfs_rt.vehicle import Vehicle, VehicleContainer, VehicleEventProduce
 from ..enums.url import TAM_MMM_GTFS_RT
 from .extract_gtfs import extract_gtfs
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:\t  %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
 
 class Init:
     def load_gtfs(self, session: Session) -> None:
@@ -20,6 +28,7 @@ class Init:
 
     async def gtfs_rt_producer(self) -> None:
         try:
+            run_state = 1
             trip_update_kafka_producer = TripUpdateEventProducer()
             await trip_update_kafka_producer.start()
             await trip_update_kafka_producer.create_topic()
@@ -54,8 +63,14 @@ class Init:
                 for alert in alert_list:
                     await alert_kafka_producer.send_dataclass(alert)
 
+                if run_state:
+                    run_state = 0
+                    logger.info(
+                        f"Running {trip_update_container.__class__.__name__} and {vehicle_container.__class__.__name__} and {alert_container.__class__.__name__}"
+                    )
                 await asyncio.sleep(10)
         except KeyboardInterrupt:
+            run_state = 0
             await trip_update_kafka_producer.stop()
             await vehicle_kafka_producer.stop()
             await alert_kafka_producer.stop()

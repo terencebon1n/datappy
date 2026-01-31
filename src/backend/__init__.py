@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.schema import CreateSchema
 
 from ..dto.gtfs.gtfs_base import GTFSModelBase
@@ -27,7 +28,7 @@ async def drop_database():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load
-    await initialize_database()
+    # await initialize_database()
     async_db_manager.initialize()
     yield
     # Clean up
@@ -38,6 +39,21 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://localhost:5500",  # Port typique de Live Server (VS Code)
+    "http://127.0.0.1:5500",
+    "http://localhost:3000",  # Port typique pour React/Vue
+    "http://localhost:8000",  # Votre propre backend
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Autorise ces origines
+    allow_credentials=True,
+    allow_methods=["*"],  # Autorise toutes les méthodes (GET, POST, etc.)
+    allow_headers=["*"],  # Autorise tous les headers
+)
 
 app.include_router(gtfs_router)
 

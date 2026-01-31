@@ -1,9 +1,12 @@
 import asyncio
-from datetime import date
-from time import time
+import json
+from dataclasses import asdict
+from datetime import date, datetime, timedelta, timezone
+from typing import Optional
 
+import redis
 import requests
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from google.transit import gtfs_realtime_pb2
 from sqlalchemy import and_, distinct, select
 from sqlalchemy.orm import aliased
@@ -15,8 +18,7 @@ from ..dto.gtfs import (
     StopTimeModel,
     TripModel,
 )
-from ..dto.gtfs_rt import TripUpdate, Vehicle, Trip
-from ..dto.gtfs_rt.update.stop_time import StopTime
+from ..dto.gtfs_rt import StopUpdate, Trip, Vehicle
 from ..dto.gtfs_rt.vehicle import Position
 from ..enums.route_type import RouteType
 from .dependencies import async_db_manager
@@ -160,108 +162,93 @@ async def get_vehicles_rt(conveyance: str, direction: str):
     return vehicle_list
 
 
-@gtfs_router.get("/trip-updates-rt/{conveyance}/{direction}/{stop_id}")
-async def get_trip_updates_rt(conveyance: str, direction: str, stop_id: str):
-    feed = gtfs_realtime_pb2.FeedMessage()
-    url = "https://data.montpellier3m.fr/TAM_MMM_GTFSRT/TripUpdate.pb"
-    response = requests.get(url)
-    feed.ParseFromString(response.content)
+class TransitRedisReader:
+    def __init__(self, host="localhost", port=6379):
+        # Decode_responses=True is essential to get strings instead of bytes
+        self.r = redis.Redis(host=host, port=port, decode_responses=True)
 
-    trip_update_list: list[TripUpdate] = []
-    for entity in feed.entity:
-        stop_time_list: list[StopTime] = []
-        if (
-            str(entity.trip_update.trip.route_id) == conveyance
-            and str(entity.trip_update.trip.direction_id) == direction
-        ):
-            for stop_time in entity.trip_update.stop_time_update:
-                if (
-                    stop_time.departure.time > int(time())
-                    and stop_time.stop_id == stop_id
-                ):
-                    stop_time_list.append(
-                        StopTime(
-                            stop_id=stop_time.stop_id,
-                            arrival_delay=stop_time.arrival.delay,
-                            arrival_time=stop_time.arrival.time,
-                            departure_delay=stop_time.departure.delay,
-                            departure_time=stop_time.departure.time,
-                            schedule_relationship=stop_time.schedule_relationship,
-                        )
-                    )
-            if stop_time_list:
-                trip_update_list.append(
-                    TripUpdate(
-                        id=entity.id,
-                        trip=Trip(
-                            id=entity.trip_update.trip.trip_id,
-                            schedule_relationship=entity.trip_update.trip.schedule_relationship,
-                            route_id=entity.trip_update.trip.route_id,
-                            direction_id=entity.trip_update.trip.direction_id,
-                        ),
-                        stop_times=stop_time_list,
-                    )
-                )
+    async def get_stop_data(self, route_id, direction_id, stop_id) -> list[StopUpdate]:
+        """Fetch all trips currently active at a specific stop."""
+        key = f"{route_id}:{direction_id}:{stop_id}"
 
-    return trip_update_list
+        # FIX: Use hgetall() instead of get()
+        # This returns a dict of {trip_id: json_string}
+        raw_data = self.r.hgetall(key)
+
+        if not raw_data:
+            return []
+
+        # Convert the hash values (JSON strings) into Python objects
+        stop_updates: list[StopUpdate] = []
+
+        for value in raw_data.values():
+            json_values = json.loads(value)
+            timestamp = datetime.strptime(
+                json_values["timestamp"], "%Y-%m-%d %H:%M:%S.%f"
+            ).replace(tzinfo=timezone.utc)
+            stop_update = StopUpdate(
+                trip_id=json_values["trip_id"],
+                timestamp=json_values["timestamp"],
+                departure_time=json_values["departure_time"],
+                departure_delay=json_values["departure_delay"],
+                arrival_time=json_values["arrival_time"],
+                arrival_delay=json_values["arrival_delay"],
+            )
+            if timestamp < datetime.now(tz=timezone.utc) - timedelta(
+                minutes=5
+            ) or stop_update.departure_time < int(
+                (datetime.now() - timedelta(minutes=1)).timestamp()
+            ):
+                continue
+
+            stop_updates.append(stop_update)
+
+        stop_updates.sort(key=lambda stop_update: stop_update.departure_time)
+        return stop_updates
+
+    async def get_all_stops_for_route(self, route_id):
+        """Fetch all stops and their trips for a route."""
+        pattern = f"{route_id}:*:*"
+        keys = self.r.keys(pattern)
+
+        results = {}
+        for key in keys:
+            # FIX: Use hgetall() here as well
+            data = self.r.hgetall(key)
+            if data:
+                results[key] = [json.loads(v) for v in data.values()]
+        return results
 
 
-@gtfs_router.websocket("/vehicle-position")
-async def vehicle_position(websocket: WebSocket) -> None:
-    await manager.connect(websocket)
-    feed = gtfs_realtime_pb2.FeedMessage()
-    url = "https://data.montpellier3m.fr/TAM_MMM_GTFSRT/VehiclePosition.pb"
-    while True:
-        response = requests.get(url)
-        feed.ParseFromString(response.content)
-        vehicle_list: list[Vehicle] = []
-        for entity in feed.entity:
-            vehicle_list.append(
-                Vehicle(
-                    id=entity.id,
-                    trip=Trip(
-                        id=entity.vehicle.trip.trip_id,
-                        schedule_relationship=entity.vehicle.trip.schedule_relationship,
-                        route_id=entity.vehicle.trip.route_id,
-                        direction_id=entity.vehicle.trip.direction_id,
-                    ),
-                    position=Position(
-                        latitude=entity.vehicle.position.latitude,
-                        longitude=entity.vehicle.position.longitude,
-                        bearing=entity.vehicle.position.bearing,
-                        speed=entity.vehicle.position.speed,
-                    ),
-                    current_status=entity.vehicle.current_status,
-                    timestamp=entity.vehicle.timestamp,
-                )
+# @gtfs_router.get("/trip-updates-rt/{conveyance}/{direction}/{stop_id}")
+# async def get_trip_updates_rt(conveyance: str, direction: str, stop_id: str):
+# Tip: In a real app, don't re-instantiate the reader on every request.
+# Use a dependency or global client.
+#    reader = TransitRedisReader(host="localhost")
+#    return await reader.get_stop_data(conveyance, direction, stop_id)
+
+
+@gtfs_router.websocket("/trip-updates-rt/{conveyance}/{direction}/{stop_id}")
+async def websocket_trip_updates(
+    websocket: WebSocket, conveyance: str, direction: str, stop_id: str
+):
+    await websocket.accept()
+    # Use 'localhost' if running FastAPI locally, 'redis' if in Docker
+    reader = TransitRedisReader(host="localhost")
+
+    last_data: Optional[list[StopUpdate]] = None
+    try:
+        while True:
+            data: list[StopUpdate] = await reader.get_stop_data(
+                conveyance, direction, stop_id
             )
 
-        await websocket.send_json({"yup": f"{vehicle_list[0]}"})
-        await asyncio.sleep(5)
+            if data != last_data:
+                await websocket.send_json([asdict(stop_update) for stop_update in data])
+                last_data = data
 
+            # 3. Wait 1 second before checking Redis again
+            await asyncio.sleep(1)
 
-@gtfs_router.get("/alert")
-async def alert() -> dict[str, str]:
-    feed = gtfs_realtime_pb2.FeedMessage()
-    url = "https://data.montpellier3m.fr/TAM_MMM_GTFSRT/Alert.pb"
-    response = requests.get(url)
-    feed.ParseFromString(response.content)
-    for entity in feed.entity:
-        print(entity)
-    return {"message": "Alert"}
-
-
-@gtfs_router.get("/trip-update")
-async def trip_update() -> dict[str, str]:
-    feed = gtfs_realtime_pb2.FeedMessage()
-    url = "https://data.montpellier3m.fr/TAM_MMM_GTFSRT/TripUpdate.pb"
-    response = requests.get(url)
-    feed.ParseFromString(response.content)
-    for entity in feed.entity:
-        print(entity)
-    return {"message": "Trip Update"}
-
-
-@gtfs_router.get("/test")
-async def test() -> dict[str, str]:
-    return {"message": "test test"}
+    except WebSocketDisconnect:
+        print("Client disconnected")

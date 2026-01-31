@@ -3,9 +3,11 @@ from .update import (
     TripUpdate,
     TripUpdateContainer,
     TripUpdateEventProducer,
+    StopUpdate,
 )
 
 __all__ = [
+    "StopUpdate",
     "TripUpdate",
     "TripUpdateContainer",
     "TripUpdateEventProducer",
