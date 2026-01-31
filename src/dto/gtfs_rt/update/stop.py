@@ -4,18 +4,14 @@ from dataclasses import dataclass
 
 import pyspark.sql.functions as sf
 import redis
-import requests
 from pyspark.sql import DataFrame
 from pyspark.sql.streaming.query import StreamingQuery
-from pyspark.sql.types import (
-    StructField,
-    StructType,
-)
 
-from ..gtfs_rt_base import GTFSRTContainerBase, GTFSRTProducerBase, GTFSRTStreamBase
+from ..gtfs_rt_base import GTFSRTStreamBase
 from ..spark_base import SparkColumns
-from ..trip import Trip, TripColumns
-from .stop_time import StopTime, StopTimeColumns
+from ..trip import TripColumns
+from .stop_time import StopTimeColumns
+from .trip import MinimizedTripUpdate, TripUpdate, TripUpdateColumns
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,37 +25,6 @@ class KafkaRawColumns(SparkColumns):
     KEY = "key"
     VALUE = "value"
     TIMESTAMP = "timestamp"
-
-
-class TripUpdateColumns(SparkColumns):
-    ID = "id"
-    TRIP = "trip"
-    STOP_TIME = "stop_time"
-
-
-@dataclass(frozen=True)
-class TripUpdate:
-    id: str
-    trip: Trip
-    stop_times: list[StopTime]
-
-
-@dataclass(frozen=True)
-class MinimizedTripUpdate:
-    id: str
-    trip: Trip
-    stop_time: StopTime
-
-    @classmethod
-    def schema(cls) -> StructType:
-        TU = TripUpdateColumns
-
-        return StructType(
-            [
-                StructField(TU.TRIP, Trip.schema(), True),
-                StructField(TU.STOP_TIME, StopTime.schema(), True),
-            ]
-        )
 
 
 @dataclass(frozen=True)
@@ -109,7 +74,7 @@ class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
             base_df.withWatermark("event_time", "2 minutes")
             .groupBy(T.ROUTE_ID, T.DIRECTION_ID, ST.STOP_ID, T.TRIP_ID)
             .agg(
-                sf.max("event_time").alias("timestamp"),
+                sf.max("event_time").alias(KR.TIMESTAMP),
                 sf.last(ST.DEPARTURE_TIME).alias(ST.DEPARTURE_TIME),
                 sf.last(ST.DEPARTURE_DELAY).alias(ST.DEPARTURE_DELAY),
                 sf.last(ST.ARRIVAL_TIME).alias(ST.ARRIVAL_TIME),
@@ -130,16 +95,16 @@ class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
 
             processed_in_partition = 0
             for row in partition:
-                redis_key = f"{row['route_id']}:{row['direction_id']}:{row['stop_id']}"
-                field_key = row["trip_id"]
+                redis_key = f"{row[TripColumns.ROUTE_ID]}:{row[TripColumns.DIRECTION_ID]}:{row[StopTimeColumns.STOP_ID]}"
+                field_key = row[TripColumns.TRIP_ID]
 
                 payload = {
-                    "trip_id": row["trip_id"],
-                    "timestamp": str(row["timestamp"]),
-                    "departure_time": row["departure_time"],
-                    "departure_delay": row["departure_delay"],
-                    "arrival_time": row["arrival_time"],
-                    "arrival_delay": row["arrival_delay"],
+                    "trip_id": row[TripColumns.TRIP_ID],
+                    "timestamp": str(row[KafkaRawColumns.TIMESTAMP]),
+                    "departure_time": row[StopTimeColumns.DEPARTURE_TIME],
+                    "departure_delay": row[StopTimeColumns.DEPARTURE_DELAY],
+                    "arrival_time": row[StopTimeColumns.ARRIVAL_TIME],
+                    "arrival_delay": row[StopTimeColumns.ARRIVAL_DELAY],
                 }
 
                 pipe.hset(redis_key, field_key, json.dumps(payload))
@@ -171,59 +136,3 @@ class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
             )
             .start()
         )
-
-
-class TripUpdateEventProducer(GTFSRTProducerBase[TripUpdate]):
-    def __init__(self) -> None:
-        super().__init__()
-
-    async def send_dataclass(self, event: TripUpdate):
-        for stop_time in event.stop_times:
-            await self.producer.send(
-                topic=self._resolve_dataclass_type.__name__,
-                key=f"{event.trip.route_id}_{event.trip.direction_id}_{stop_time.stop_id}".encode(
-                    "utf-8"
-                ),
-                value=self.encoder.encode(
-                    MinimizedTripUpdate(
-                        id=event.id, trip=event.trip, stop_time=stop_time
-                    )
-                ),
-            )
-
-
-class TripUpdateContainer(GTFSRTContainerBase[TripUpdate]):
-    items: list[TripUpdate]
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    async def extract(self, url: str) -> list[TripUpdate]:
-        response = requests.get(url)
-        self.feed.ParseFromString(response.content)
-        for entity in self.feed.entity:
-            stop_time_list: list[StopTime] = []
-            for stop_time in entity.trip_update.stop_time_update:
-                stop_time_list.append(
-                    StopTime(
-                        stop_id=stop_time.stop_id,
-                        arrival_delay=stop_time.arrival.delay,
-                        arrival_time=stop_time.arrival.time,
-                        departure_delay=stop_time.departure.delay,
-                        departure_time=stop_time.departure.time,
-                        schedule_relationship=stop_time.schedule_relationship,
-                    )
-                )
-            self.items.append(
-                TripUpdate(
-                    id=entity.id,
-                    trip=Trip(
-                        id=entity.trip_update.trip.trip_id,
-                        schedule_relationship=entity.trip_update.trip.schedule_relationship,
-                        route_id=entity.trip_update.trip.route_id,
-                        direction_id=entity.trip_update.trip.direction_id,
-                    ),
-                    stop_times=stop_time_list,
-                )
-            )
-        return self.items

@@ -1,10 +1,5 @@
-from .update import (
-    StopUpdateStream,
-    TripUpdate,
-    TripUpdateContainer,
-    TripUpdateEventProducer,
-    StopUpdate,
-)
+from .stop import StopUpdate, StopUpdateStream
+from .trip import TripUpdate, TripUpdateContainer, TripUpdateEventProducer
 
 __all__ = [
     "StopUpdate",
