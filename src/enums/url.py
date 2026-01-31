@@ -2,7 +2,7 @@ from enum import StrEnum
 
 
 class TAM_MMM_GTFS_RT(StrEnum):
-    TRIP_UPDATE = "https://data.montpellier3m.fr/GTFS/Urbain/TripUpdate.pb"
-    VEHICLE_POSITION = "https://data.montpellier3m.fr/GTFS/Urbain/VehiclePosition.pb"
-    ALERT = "https://data.montpellier3m.fr/GTFS/Urbain/Alert.pb"
-    GTFS_ZIP = "https://data.montpellier3m.fr/GTFS/Urbain/GTFS.zip"
+    TRIP_UPDATE = "https://gtfsproxy.e-tam.fr/URB/TripUpdate.pb"
+    VEHICLE_POSITION = "https://gtfsproxy.e-tam.fr/URB/VehiclePosition.pb"
+    ALERT = "https://gtfsproxy.e-tam.fr/URB/Alert.pb"
+    GTFS_ZIP = "https://gtfsproxy.e-tam.fr/URB/GTFS.zip"

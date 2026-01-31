@@ -82,7 +82,7 @@ class StopContainer(GTFSContainerBase[Stop, StopModel]):
         for data in file_data:
             stop = Stop(
                 id=data["stop_id"],
-                code=int(data["stop_code"]),
+                code=int(data["stop_code"]) if data["stop_code"] else 0,
                 name=data["stop_name"],
                 tts_name=data["tts_stop_name"],
                 latitude=float(data["stop_lat"]),

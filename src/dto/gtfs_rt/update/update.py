@@ -1,24 +1,34 @@
+import json
+import logging
 from dataclasses import dataclass
 
 import pyspark.sql.functions as sf
 import redis
 import requests
 from pyspark.sql import DataFrame
+from pyspark.sql.streaming.query import StreamingQuery
 from pyspark.sql.types import (
     StructField,
     StructType,
 )
-from pyspark.sql.streaming.query import StreamingQuery
 
 from ..gtfs_rt_base import GTFSRTContainerBase, GTFSRTProducerBase, GTFSRTStreamBase
 from ..spark_base import SparkColumns
 from ..trip import Trip, TripColumns
 from .stop_time import StopTime, StopTimeColumns
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:\t  %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
 
 class KafkaRawColumns(SparkColumns):
     KEY = "key"
     VALUE = "value"
+    TIMESTAMP = "timestamp"
 
 
 class TripUpdateColumns(SparkColumns):
@@ -52,6 +62,16 @@ class MinimizedTripUpdate:
         )
 
 
+@dataclass(frozen=True)
+class StopUpdate:
+    trip_id: str
+    timestamp: str
+    departure_time: int
+    departure_delay: int
+    arrival_time: int
+    arrival_delay: int
+
+
 class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
     def __init__(self, appname: str) -> None:
         super().__init__(appname)
@@ -60,73 +80,79 @@ class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
             self.spark.readStream.format("kafka")
             .options(**self.config.kafka.to_spark_options())
             .option("subscribe", self._resolve_dataclass_type.__name__)
+            .option("failOnDataLoss", "false")
             .load()
         )
 
     def process_dataframe(self) -> DataFrame:
         KR, TU, T, ST = KafkaRawColumns, TripUpdateColumns, TripColumns, StopTimeColumns
 
+        base_df = self.stream.select(
+            KR.KEY.col.cast("string").alias(KR.KEY),
+            KR.TIMESTAMP.col.cast("timestamp").alias("event_time"),
+            sf.from_json(
+                KR.VALUE.col.cast("string"), MinimizedTripUpdate.schema()
+            ).alias(KR.VALUE),
+        ).select(
+            "event_time",
+            (KR.VALUE / TU.TRIP / T.ROUTE_ID).alias(T.ROUTE_ID),
+            (KR.VALUE / TU.TRIP / T.DIRECTION_ID).alias(T.DIRECTION_ID),
+            (KR.VALUE / TU.TRIP / T.ID).alias(T.TRIP_ID),
+            (KR.VALUE / TU.STOP_TIME / ST.STOP_ID).alias(ST.STOP_ID),
+            (KR.VALUE / TU.STOP_TIME / ST.DEPARTURE_TIME).alias(ST.DEPARTURE_TIME),
+            (KR.VALUE / TU.STOP_TIME / ST.DEPARTURE_DELAY).alias(ST.DEPARTURE_DELAY),
+            (KR.VALUE / TU.STOP_TIME / ST.ARRIVAL_TIME).alias(ST.ARRIVAL_TIME),
+            (KR.VALUE / TU.STOP_TIME / ST.ARRIVAL_DELAY).alias(ST.ARRIVAL_DELAY),
+        )
+
         return (
-            self.stream.select(
-                KR.KEY.col.cast("string").alias(KR.KEY),
-                sf.from_json(
-                    KR.VALUE.col.cast("string"), MinimizedTripUpdate.schema()
-                ).alias(KR.VALUE),
-            )
-            .select(
-                KR.KEY.col,
-                (KR.VALUE / TU.TRIP / T.ROUTE_ID).alias(T.ROUTE_ID),
-                (KR.VALUE / TU.TRIP / T.DIRECTION_ID).alias(T.DIRECTION_ID),
-                (KR.VALUE / TU.TRIP / T.ID).alias(T.TRIP_ID),
-                (KR.VALUE / TU.STOP_TIME / ST.STOP_ID).alias(ST.STOP_ID),
-                (KR.VALUE / TU.STOP_TIME / ST.DEPARTURE_TIME).alias(ST.DEPARTURE_TIME),
-                (KR.VALUE / TU.STOP_TIME / ST.DEPARTURE_DELAY).alias(
-                    ST.DEPARTURE_DELAY
-                ),
-                (KR.VALUE / TU.STOP_TIME / ST.ARRIVAL_TIME).alias(ST.ARRIVAL_TIME),
-                (KR.VALUE / TU.STOP_TIME / ST.ARRIVAL_DELAY).alias(ST.ARRIVAL_DELAY),
-            )
-            .groupBy(T.ROUTE_ID, T.DIRECTION_ID, ST.STOP_ID)
+            base_df.withWatermark("event_time", "2 minutes")
+            .groupBy(T.ROUTE_ID, T.DIRECTION_ID, ST.STOP_ID, T.TRIP_ID)
             .agg(
-                sf.collect_set(
-                    sf.struct(
-                        T.TRIP_ID,
-                        ST.DEPARTURE_TIME,
-                        ST.DEPARTURE_DELAY,
-                        ST.ARRIVAL_TIME,
-                        ST.ARRIVAL_DELAY,
-                    )
-                ).alias("stop_times")
+                sf.max("event_time").alias("timestamp"),
+                sf.last(ST.DEPARTURE_TIME).alias(ST.DEPARTURE_TIME),
+                sf.last(ST.DEPARTURE_DELAY).alias(ST.DEPARTURE_DELAY),
+                sf.last(ST.ARRIVAL_TIME).alias(ST.ARRIVAL_TIME),
+                sf.last(ST.ARRIVAL_DELAY).alias(ST.ARRIVAL_DELAY),
             )
-            .withColumn("stop_times", sf.to_json(sf.col("stop_times")))
         )
 
     @staticmethod
     def _write_to_redis_batch(batch_df: DataFrame, batch_id: int):
-        """
-        Internal worker function to process one micro-batch.
-        """
+        record_count = batch_df.count()
+        logger.info(
+            f"=== Batch {batch_id} started | Records to process: {record_count} ==="
+        )
 
         def process_partition(partition):
-            # Connect to the 'redis' service defined in your docker-compose
             r = redis.Redis(host="redis", port=6379, decode_responses=True)
             pipe = r.pipeline()
 
+            processed_in_partition = 0
             for row in partition:
-                # 1. Create the composite key
                 redis_key = f"{row['route_id']}:{row['direction_id']}:{row['stop_id']}"
+                field_key = row["trip_id"]
 
-                # 2. Overwrite logic
-                # We use a simple SET because stop_times is already a JSON string
-                # from your sf.to_json transformation.
-                pipe.set(redis_key, row["stop_times"])
+                payload = {
+                    "trip_id": row["trip_id"],
+                    "timestamp": str(row["timestamp"]),
+                    "departure_time": row["departure_time"],
+                    "departure_delay": row["departure_delay"],
+                    "arrival_time": row["arrival_time"],
+                    "arrival_delay": row["arrival_delay"],
+                }
 
-                # 3. Optional: Set TTL to 5 minutes (300s) so stale real-time data expires
+                pipe.hset(redis_key, field_key, json.dumps(payload))
                 pipe.expire(redis_key, 300)
+                processed_in_partition += 1
 
             pipe.execute()
+            print(f"DEBUG: Partition processed {processed_in_partition} records.")
 
-        batch_df.foreachPartition(process_partition)
+        if record_count > 0:
+            batch_df.foreachPartition(process_partition)
+
+        logger.info(f"=== Batch {batch_id} completed ===")
 
     def to_redis(self) -> StreamingQuery:
         """
@@ -134,11 +160,15 @@ class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
         """
         processed_df = self.process_dataframe()
 
+        logger.info("Writing Stop Updates to Redis stream")
+
         # Using 'update' mode is appropriate here since you are using aggregations (groupBy)
         return (
             processed_df.writeStream.outputMode("update")
             .foreachBatch(self._write_to_redis_batch)
-            .option("checkpointLocation", f"/tmp/checkpoints/{self.__class__.__name__}")
+            .option(
+                "checkpointLocation", f"/tmp/checkpoints/{self.__class__.__name__}_v2"
+            )
             .start()
         )
 

@@ -1,15 +1,24 @@
-import msgspec
-
-from aiokafka import AIOKafkaProducer
-from aiokafka.admin import AIOKafkaAdminClient, NewTopic
-from pyspark.sql import SparkSession
-
+import logging
 from abc import abstractmethod
 from typing import Type, TypeVar, cast, get_args
+
+import msgspec
+from aiokafka import AIOKafkaProducer
+from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 from google.transit import gtfs_realtime_pb2
-from ...config import settings, AppConfig
+from pyspark.sql import SparkSession
+
+from ...config import AppConfig, settings
 
 TDataclass = TypeVar("TDataclass")
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:\t  %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 
 class GTFSRTStreamBase[TDataclass]:
@@ -24,6 +33,9 @@ class GTFSRTStreamBase[TDataclass]:
             .appName(appname)
             .getOrCreate()
         )
+
+        self.spark.conf.set("spark.sql.shuffle.partitions", "4")
+        self.spark.conf.set("spark.sql.session.timeZone", "UTC")
 
     @property
     def _resolve_dataclass(cls) -> TDataclass:
@@ -73,12 +85,7 @@ class GTFSRTProducerBase[TDataclass]:
 
     async def create_topic(self):
         configs = {
-            # 1. Enable both deletion and compaction
-            "cleanup.policy": "compact,delete",
-            # 3. Retention time (e.g., 2 minutes)
-            "retention.ms": "12000",
-            # 4. How long to wait before deleting compacted data
-            "delete.retention.ms": "30000",
+            "cleanup.policy": "compact",
         }
 
         new_topics = [
@@ -89,6 +96,9 @@ class GTFSRTProducerBase[TDataclass]:
                 topic_configs=configs,
             )
         ]
+
+        logger.info(f"Creating topic {self._resolve_dataclass_type.__name__}")
+
         await self.admin.create_topics(new_topics=new_topics)
 
     @abstractmethod

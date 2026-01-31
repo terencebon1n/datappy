@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transit RT Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">GTFS Real-Time Viewer</h1>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">1. Transport Type</label>
+                <select id="routeType" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option value="">Loading types...</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">2. Route (Conveyance)</label>
+                <select id="conveyance" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" disabled>
+                    <option value="">Select a type first</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">3. Source (Origin)</label>
+                    <select id="sourceStop" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" disabled>
+                        <option value="">Select route first</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">4. Destination</label>
+                    <select id="destStop" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" disabled>
+                        <option value="">Select route first</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="fetchUpdate" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded hover:bg-indigo-700 disabled:bg-gray-400 transition" disabled>
+                Get Live Trip Updates
+            </button>
+        </div>
+
+        <div id="result" class="mt-6 bg-gray-900 text-green-400 p-4 rounded border border-gray-700 min-h-[150px] overflow-auto font-mono text-sm">
+            <p class="text-gray-500 italic">// Results will appear here...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8000"; 
+        
+        const elRouteType = document.getElementById('routeType');
+        const elConveyance = document.getElementById('conveyance');
+        const elSource = document.getElementById('sourceStop');
+        const elDest = document.getElementById('destStop');
+        const elBtn = document.getElementById('fetchUpdate');
+        const elResult = document.getElementById('result');
+
+        // Helper to populate a select
+        function fillSelect(element, data, placeholder, isStringArray = false) {
+            element.innerHTML = `<option value="">-- ${placeholder} --</option>`;
+            data.forEach(item => {
+                const val = isStringArray ? item : item.id;
+                const label = isStringArray ? item : (item.short_name ? `${item.short_name} - ${item.long_name}` : item.name);
+                element.innerHTML += `<option value="${val}">${label}</option>`;
+            });
+            element.disabled = false;
+        }
+
+        // 1. Initial Load
+        (async () => {
+            try {
+                const res = await fetch(`${API_BASE}/route-type`);
+                fillSelect(elRouteType, await res.json(), "Choose Type", true);
+            } catch (e) { elRouteType.innerHTML = "<option>Error loading types</option>"; }
+        })();
+
+        // 2. Change Type -> Get Conveyances
+        elRouteType.addEventListener('change', async (e) => {
+            elConveyance.disabled = elSource.disabled = elDest.disabled = elBtn.disabled = true;
+            if (!e.target.value) return;
+            const res = await fetch(`${API_BASE}/conveyance/${e.target.value}`);
+            fillSelect(elConveyance, await res.json(), "Choose Route");
+        });
+
+        // 3. Change Conveyance -> Get All Stops for Source & Destination
+        elConveyance.addEventListener('change', async (e) => {
+            elSource.disabled = elDest.disabled = elBtn.disabled = true;
+            const routeId = e.target.value;
+            if (!routeId) return;
+
+            const res = await fetch(`${API_BASE}/stop/${routeId}`);
+            const stops = await res.json();
+            
+            fillSelect(elSource, stops, "Select Origin", true);
+            fillSelect(elDest, stops, "Select Destination", true);
+        });
+
+        // 4. Enable button only if both stops are selected
+        [elSource, elDest].forEach(el => el.addEventListener('change', () => {
+            elBtn.disabled = !(elSource.value && elDest.value);
+        }));
+
+        // 5. Final Action
+        let socket = null; // Global to track the active connection
+
+        elBtn.addEventListener('click', async () => {
+            elResult.innerHTML = "Establishing live connection...";
+            
+            // 1. Close existing socket if user is switching stops
+            if (socket) {
+                socket.close();
+            }
+            
+            try {
+                // A. Get direction details (still a standard fetch)
+                const dirUrl = `${API_BASE}/direction/${elConveyance.value}/${encodeURIComponent(elSource.value)}/${encodeURIComponent(elDest.value)}`;
+                const dirRes = await fetch(dirUrl);
+                const dirData = await dirRes.json();
+
+                if (dirData.direction_id === null) {
+                    elResult.innerHTML = "No direct route found.";
+                    return;
+                }
+
+                // B. Open WebSocket connection
+                // Note: Change 'http' to 'ws' and '8000' to your backend port
+                const wsUrl = `ws://localhost:8000/trip-updates-rt/${elConveyance.value}/${dirData.direction_id}/${dirData.origin_stop_id}`;
+                socket = new WebSocket(wsUrl);
+
+                socket.onopen = () => {
+                    elResult.innerHTML = "Connected. Waiting for real-time updates...";
+                };
+
+            socket.onmessage = (event) => {
+                const trips = JSON.parse(event.data);
+                
+                if (trips && trips.length > 0) {
+                    const statusHeader = `
+                        <div class="flex items-center space-x-2 mb-4 text-xs font-bold text-green-400 uppercase tracking-widest">
+                            <div class="w-2 h-2 bg-green-400 rounded-full pulse"></div>
+                            <span>Live System Active</span>
+                        </div>
+                    `;
+
+                    let tableHtml = statusHeader + `
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="text-gray-400 border-b border-gray-700 text-xs uppercase">
+                                        <th class="py-2 px-4">Trip</th>
+                                        <th class="py-2 px-4 text-center">Arrival</th>
+                                        <th class="py-2 px-4 text-center">Departure</th>
+                                        <th class="py-2 px-4 text-center">Delay</th>
+                                        <th class="py-2 px-4 text-right">Last Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-800">
+                    `;
+
+                    trips.forEach(trip => {
+                        // Updated Format: Includes seconds
+                        const formatTime = (ts) => {
+                            if (!ts) return '--:--:--';
+                            return new Date(ts * 1000).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit', 
+                                second: '2-digit',
+                                hour12: false 
+                            });
+                        };
+                        
+                        const arrivalStr = formatTime(trip.arrival_time);
+                        const departureStr = formatTime(trip.departure_time);
+                        
+                        // Format Delay into +/- M:SS
+                        const delayInSeconds = trip.arrival_delay || 0;
+                        const absDelay = Math.abs(delayInSeconds);
+                        const mins = Math.floor(absDelay / 60);
+                        const secs = String(absDelay % 60).padStart(2, '0');
+                        
+                        const delaySign = delayInSeconds > 0 ? '+' : (delayInSeconds < 0 ? '-' : '');
+                        const delayText = delayInSeconds === 0 ? 'On Time' : `${delaySign}${mins}:${secs}`;
+                        const delayClass = delayInSeconds > 0 ? 'text-red-400' : (delayInSeconds < 0 ? 'text-blue-400' : 'text-green-400');
+
+                        // Spark update timestamp (keep as is or add seconds if available in string)
+                        const updated = trip.timestamp ? trip.timestamp.split(' ')[1] : '--';
+
+                        tableHtml += `
+                            <tr class="hover:bg-gray-800 transition">
+                                <td class="py-3 px-4 font-mono text-white text-xs">${trip.trip_id.split('-')[0]}</td>
+                                <td class="py-3 px-4 text-center text-indigo-300 font-bold font-mono">${arrivalStr}</td>
+                                <td class="py-3 px-4 text-center text-gray-300 font-mono">${departureStr}</td>
+                                <td class="py-3 px-4 text-center ${delayClass} font-mono font-medium">${delayText}</td>
+                                <td class="py-3 px-4 text-right text-gray-500 text-xs font-mono">${updated}</td>
+                            </tr>
+                        `;
+                    });
+
+                    tableHtml += `</tbody></table></div>`;
+                    elResult.innerHTML = tableHtml;
+                } else {
+                    elResult.innerHTML = `<p class="text-gray-500 text-center py-10">Waiting for live data updates...</p>`;
+                }
+            };
+                socket.onclose = () => {
+                    console.log("WebSocket closed.");
+                };
+
+                socket.onerror = (err) => {
+                    elResult.innerHTML = "Connection Error: " + err.message;
+                };
+
+            } catch (err) {
+                elResult.innerHTML = "Setup Error: " + err.message;
+            }
+       });
+    </script>
+</body>
+</html>

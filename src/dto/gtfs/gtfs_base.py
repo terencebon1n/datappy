@@ -1,11 +1,12 @@
 import csv
 import logging
-
 from abc import abstractmethod
 from collections.abc import Iterable
+from dataclasses import asdict
 from typing import Optional, Type, TypeVar, cast, get_args, get_origin
 
 from sqlalchemy import MetaData
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import DeclarativeBase, Session
 
 from .gtfs_protocol import GTFSDataclassProtocol
@@ -75,10 +76,26 @@ class GTFSContainerBase[TDataclass, TModel]:
     def to_models_iterable(self) -> Iterable[TModel]:
         return (item.to_model() for item in self.items)  # type: ignore[attr-defined]
 
+    def to_dicts_iterable(self) -> Iterable[dict]:
+        """
+        Extracts only the fields from the dataclass that
+        actually exist as columns in the DB model.
+        """
+        allowed_columns = self._resolve_model.__table__.columns.keys()  # type: ignore[attr-defined]
+
+        return (
+            {
+                k: v
+                for k, v in asdict(item).items()  # type: ignore[attr-defined]
+                if k in allowed_columns
+            }
+            for item in self.items
+        )
+
     @abstractmethod
     def extract(self, file_data: csv.DictReader[str]) -> None: ...
 
-    def load(self, session: Session, batch_size: int = 10000) -> None:
+    def load(self, session: Session, batch_size: int = 1000) -> None:
         logger.info(f"Initializing {self._resolve_dataclass_type.__name__}")
         if not self.items:
             logger.info(
@@ -86,18 +103,23 @@ class GTFSContainerBase[TDataclass, TModel]:
             )
             return
 
-        item_models = self.to_models_iterable()
+        item_dicts = self.to_dicts_iterable()
 
-        if not item_models:
+        if not item_dicts:
             return
 
-        batch: list[TModel] = []
+        batch: list[dict] = []
 
-        for i, item_model in enumerate(item_models):
-            batch.append(item_model)
+        for i, item_dict in enumerate(item_dicts):
+            batch.append(item_dict)
             if (i + 1) % batch_size == 0:
                 try:
-                    session.add_all(batch)
+                    stmt = (
+                        insert(self._resolve_model)
+                        .values(batch)
+                        .on_conflict_do_nothing()
+                    )  # type: ignore[attr-defined]
+                    session.execute(stmt)
                     session.commit()
                     logger.info(
                         f"Initialized {i + 1} {self._resolve_dataclass_type.__name__}"
@@ -106,10 +128,12 @@ class GTFSContainerBase[TDataclass, TModel]:
                     session.rollback()
                     raise e
                 batch = []
-
         if batch:
             try:
-                session.add_all(batch)
+                stmt = (
+                    insert(self._resolve_model).values(batch).on_conflict_do_nothing()
+                )  # type: ignore[attr-defined]
+                session.execute(stmt)
                 session.commit()
             except Exception as e:
                 session.rollback()

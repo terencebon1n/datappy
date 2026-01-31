@@ -1,6 +1,6 @@
 kafka:
   bootstrap_servers: "broker:29092"
-  starting_offsets: "earliest"
+  starting_offsets: "latest"
   max_offsets_per_trigger: 1000
   security:
     protocol: "SSL"
