@@ -1,0 +1,41 @@
+from typing import Dict, Type
+
+from sqlalchemy.orm import Session
+
+from src.domain.gtfs.enums import GTFSFileNames
+from src.infrastructure.database.repository import BaseRepository
+
+from .agency import AgencyRepository
+from .calendar_date import CalendarDateRepository
+from .route import RouteRepository
+from .stop import StopRepository
+from .transfer import TransferRepository
+from .trip import TripRepository
+from .stop_time import StopTimeRepository
+
+
+class RepositoryRegistry:
+    _mapping: Dict[GTFSFileNames, Type[BaseRepository]] = {
+        GTFSFileNames.AGENCY: AgencyRepository,
+        GTFSFileNames.CALENDAR_DATES: CalendarDateRepository,
+        GTFSFileNames.ROUTES: RouteRepository,
+        GTFSFileNames.STOPS: StopRepository,
+        GTFSFileNames.TRANSFERS: TransferRepository,
+        GTFSFileNames.TRIPS: TripRepository,
+        GTFSFileNames.STOP_TIMES: StopTimeRepository,
+    }
+
+    @classmethod
+    def get_repository_for_file(
+        cls, file_type: GTFSFileNames, session: Session
+    ) -> BaseRepository:
+        repository_class = cls._mapping.get(file_type)
+
+        if not repository_class:
+            raise ValueError(f"No repository registered for {file_type.name}")
+
+        return repository_class(session)
+
+    @classmethod
+    def supported_files(cls):
+        return cls._mapping.keys()

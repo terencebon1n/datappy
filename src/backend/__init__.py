@@ -5,9 +5,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.schema import CreateSchema
 
-from ..dto.gtfs.gtfs_base import GTFSModelBase
 from .dependencies import async_db_manager, db_manager, init
 from .router import gtfs_router
+
+from src.infrastructure.database.postgres.base import GTFSModelBase
 
 
 async def initialize_database():
@@ -25,10 +26,19 @@ async def drop_database():
     await db_manager.close()
 
 
+async def initialize_database_v2():
+    db_manager.initialize()
+    db_manager.session.execute(CreateSchema("gtfs", if_not_exists=True))
+    db_manager.session.commit()
+    GTFSModelBase.metadata.create_all(db_manager.engine)
+    init.load_gtfs_v2(db_manager.session)
+    await db_manager.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load
-    # await initialize_database()
+    await initialize_database_v2()
     async_db_manager.initialize()
     yield
     # Clean up

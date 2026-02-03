@@ -52,7 +52,7 @@ class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
     def process_dataframe(self) -> DataFrame:
         KR, TU, T, ST = KafkaRawColumns, TripUpdateColumns, TripColumns, StopTimeColumns
 
-        base_df = self.stream.select(
+        base_df: DataFrame = self.stream.select(
             KR.KEY.col.cast("string").alias(KR.KEY),
             KR.TIMESTAMP.col.cast("timestamp").alias("event_time"),
             sf.from_json(
@@ -123,7 +123,7 @@ class StopUpdateStream(GTFSRTStreamBase[TripUpdate]):
         """
         Starts the stream and sinks data to Redis.
         """
-        processed_df = self.process_dataframe()
+        processed_df: DataFrame = self.process_dataframe()
 
         logger.info("Writing Stop Updates to Redis stream")
 
