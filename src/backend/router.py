@@ -5,9 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 import redis
-import requests
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from google.transit import gtfs_realtime_pb2
 from sqlalchemy import and_, distinct, select
 from sqlalchemy.orm import aliased
 
@@ -18,8 +16,7 @@ from ..dto.gtfs import (
     StopTimeModel,
     TripModel,
 )
-from ..dto.gtfs_rt import StopUpdate, Trip, Vehicle
-from ..dto.gtfs_rt.vehicle import Position
+from ..dto.gtfs_rt import StopUpdate
 from ..enums.route_type import RouteType
 from .dependencies import async_db_manager
 from .websocket import ConnectionManager
@@ -127,41 +124,6 @@ async def get_direction(conveyance: str, origin: str, destination: str):
     }
 
 
-@gtfs_router.get("/vehicles-rt/{conveyance}/{direction}")
-async def get_vehicles_rt(conveyance: str, direction: str):
-    feed = gtfs_realtime_pb2.FeedMessage()
-    url = "https://data.montpellier3m.fr/TAM_MMM_GTFSRT/VehiclePosition.pb"
-    response = requests.get(url)
-    feed.ParseFromString(response.content)
-    vehicle_list: list[Vehicle] = []
-    for entity in feed.entity:
-        if (
-            str(entity.vehicle.trip.route_id) == conveyance
-            and str(entity.vehicle.trip.direction_id) == direction
-        ):
-            vehicle_list.append(
-                Vehicle(
-                    id=entity.id,
-                    trip=Trip(
-                        id=entity.vehicle.trip.trip_id,
-                        schedule_relationship=entity.vehicle.trip.schedule_relationship,
-                        route_id=entity.vehicle.trip.route_id,
-                        direction_id=entity.vehicle.trip.direction_id,
-                    ),
-                    position=Position(
-                        latitude=entity.vehicle.position.latitude,
-                        longitude=entity.vehicle.position.longitude,
-                        bearing=entity.vehicle.position.bearing,
-                        speed=entity.vehicle.position.speed,
-                    ),
-                    current_status=entity.vehicle.current_status,
-                    timestamp=entity.vehicle.timestamp,
-                )
-            )
-
-    return vehicle_list
-
-
 class TransitRedisReader:
     def __init__(self, host="localhost", port=6379):
         # Decode_responses=True is essential to get strings instead of bytes
@@ -171,8 +133,6 @@ class TransitRedisReader:
         """Fetch all trips currently active at a specific stop."""
         key = f"{route_id}:{direction_id}:{stop_id}"
 
-        # FIX: Use hgetall() instead of get()
-        # This returns a dict of {trip_id: json_string}
         raw_data = self.r.hgetall(key)
 
         if not raw_data:
@@ -183,9 +143,18 @@ class TransitRedisReader:
 
         for value in raw_data.values():
             json_values = json.loads(value)
-            timestamp = datetime.strptime(
-                json_values["timestamp"], "%Y-%m-%d %H:%M:%S.%f"
-            ).replace(tzinfo=timezone.utc)
+
+            if len(json_values["timestamp"]) == 26:
+                timestamp = datetime.strptime(
+                    json_values["timestamp"], "%Y-%m-%d %H:%M:%S.%f"
+                ).replace(tzinfo=timezone.utc)
+            elif len(json_values["timestamp"]) == 19:
+                timestamp = datetime.strptime(
+                    json_values["timestamp"], "%Y-%m-%d %H:%M:%S"
+                ).replace(tzinfo=timezone.utc)
+            else:
+                continue
+
             stop_update = StopUpdate(
                 trip_id=json_values["trip_id"],
                 timestamp=json_values["timestamp"],
@@ -247,8 +216,7 @@ async def websocket_trip_updates(
                 await websocket.send_json([asdict(stop_update) for stop_update in data])
                 last_data = data
 
-            # 3. Wait 1 second before checking Redis again
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
 
     except WebSocketDisconnect:
         print("Client disconnected")
