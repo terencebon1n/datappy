@@ -14,7 +14,6 @@ from ..dto.gtfs_rt.vehicle import Vehicle, VehicleContainer, VehicleEventProduce
 from ..enums.url import TAM_MMM_GTFS_RT
 from src.domain.gtfs.enums import GTFSCityUrls
 from src.application.services.gtfs_loader import GTFSLoaderService
-from .extract_gtfs import extract_gtfs
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,9 +25,6 @@ logger = logging.getLogger(__name__)
 
 class Init:
     def load_gtfs(self, session: Session) -> None:
-        extract_gtfs(TAM_MMM_GTFS_RT.GTFS_ZIP, session)
-
-    def load_gtfs_v2(self, session: Session) -> None:
         gtfs_loader = GTFSLoaderService(session)
         gtfs_loader.perform_import(GTFSCityUrls.MONTPELLIER)
 
