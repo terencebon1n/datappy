@@ -9,13 +9,11 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy import and_, distinct, select
 from sqlalchemy.orm import aliased
 
-from ..dto.gtfs import (
-    CalendarDateModel,
-    RouteModel,
-    StopModel,
-    StopTimeModel,
-    TripModel,
-)
+from src.infrastructure.database.postgres.models.calendar_date import CalendarDateModel
+from src.infrastructure.database.postgres.models.route import RouteModel
+from src.infrastructure.database.postgres.models.stop import StopModel
+from src.infrastructure.database.postgres.models.stop_time import StopTimeModel
+from src.infrastructure.database.postgres.models.trip import TripModel
 from ..dto.gtfs_rt import StopUpdate
 from ..enums.route_type import RouteType
 from .dependencies import async_db_manager
