@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Union
 
 from enum import StrEnum
+from typing import Union
+
 import pyspark.sql.functions as sf
 from pyspark.sql.column import Column
 

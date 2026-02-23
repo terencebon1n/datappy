@@ -5,10 +5,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.schema import CreateSchema
 
+from src.infrastructure.database.postgres.base import GTFSModelBase
+
 from .dependencies import async_db_manager, db_manager, init
 from .router import gtfs_router
-
-from src.infrastructure.database.postgres.base import GTFSModelBase
 
 
 async def drop_database():

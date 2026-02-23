@@ -1,7 +1,7 @@
-from src.domain.gtfs_rt.trip_update import TripUpdate, MinimizedTripUpdate
-from src.infrastructure.messaging.kafka_producer import KafkaProducerAdapter
-from src.infrastructure.external.rt.trip_update import TripUpdateGateway
 from src.application.producers.registry import ProducerTask
+from src.domain.gtfs_rt.trip_update import MinimizedTripUpdate, TripUpdate
+from src.infrastructure.external.rt.trip_update import TripUpdateGateway
+from src.infrastructure.messaging.kafka_producer import KafkaProducerAdapter
 
 
 class TripIngestorService:

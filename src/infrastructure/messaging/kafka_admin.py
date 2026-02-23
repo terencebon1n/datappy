@@ -1,6 +1,8 @@
-from aiokafka.admin import AIOKafkaAdminClient, NewTopic
-from src.config import settings
 import logging
+
+from aiokafka.admin import AIOKafkaAdminClient, NewTopic
+
+from src.config import settings
 
 logging.basicConfig(
     level=logging.INFO,

@@ -1,6 +1,5 @@
 import asyncio
 import json
-from dataclasses import asdict
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
@@ -9,12 +8,13 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy import and_, distinct, select
 from sqlalchemy.orm import aliased
 
+from src.domain.gtfs_rt.stop_update import StopUpdate
 from src.infrastructure.database.postgres.models.calendar_date import CalendarDateModel
 from src.infrastructure.database.postgres.models.route import RouteModel
 from src.infrastructure.database.postgres.models.stop import StopModel
 from src.infrastructure.database.postgres.models.stop_time import StopTimeModel
 from src.infrastructure.database.postgres.models.trip import TripModel
-from ..dto.gtfs_rt import StopUpdate
+
 from ..enums.route_type import RouteType
 from .dependencies import async_db_manager
 from .websocket import ConnectionManager
@@ -211,7 +211,9 @@ async def websocket_trip_updates(
             )
 
             if data != last_data:
-                await websocket.send_json([asdict(stop_update) for stop_update in data])
+                await websocket.send_json(
+                    [stop_update.model_dump() for stop_update in data]
+                )
                 last_data = data
 
             await asyncio.sleep(5)

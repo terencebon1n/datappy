@@ -11,7 +11,7 @@ class StopTime(BaseModel):
     arrival_delay: int
     departure_time: int
     departure_delay: int
-    schedule_relationship: str
+    schedule_relationship: int
 
 
 class TripUpdate(BaseModel):

@@ -1,5 +1,6 @@
-from fastapi import WebSocket
 from typing import Any
+
+from fastapi import WebSocket
 
 
 class ConnectionManager:

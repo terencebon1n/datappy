@@ -1,9 +1,11 @@
 from aiokafka import AIOKafkaProducer
 
+from src.config import settings
+
 
 class KafkaProducerAdapter:
-    def __init__(self, brokers: str):
-        self.producer = AIOKafkaProducer(bootstrap_servers=brokers)
+    def __init__(self):
+        self.producer = AIOKafkaProducer(bootstrap_servers=settings.kafka.brokers)
 
     async def start(self):
         await self.producer.start()
