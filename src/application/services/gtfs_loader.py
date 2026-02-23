@@ -1,10 +1,10 @@
-from src.infrastructure.external.gtfs_zip_reader import GTFSZipReader
-from src.domain.gtfs.enums import GTFSCityUrls
-
 from sqlalchemy.orm import Session
+
+from src.domain.gtfs.enums import GTFSCityUrls
 from src.infrastructure.database.postgres.repositories.registry import (
     RepositoryRegistry,
 )
+from src.infrastructure.external.gtfs_zip_reader import GTFSZipReader
 
 
 class GTFSLoaderService:

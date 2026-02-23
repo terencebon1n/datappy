@@ -12,7 +12,7 @@ class TripUpdateGateway:
         """Fetch the binary Protobuf from the URL."""
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
-            response.raise_for_status() # Raises an error for 4xx/5xx responses
+            response.raise_for_status()  # Raises an error for 4xx/5xx responses
             return response.content
 
     def _parse_stop_time(self, stop_time_update: list) -> List[StopTime]:

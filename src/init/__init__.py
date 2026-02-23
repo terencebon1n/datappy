@@ -3,17 +3,17 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from ..dto.gtfs_rt.alert import Alert, AlertContainer, AlertEventProducer
-from ..dto.gtfs_rt.update import (
-    StopUpdateStream,
-    TripUpdate,
-    TripUpdateContainer,
-    TripUpdateEventProducer,
-)
-from ..dto.gtfs_rt.vehicle import Vehicle, VehicleContainer, VehicleEventProducer
-from ..enums.url import TAM_MMM_GTFS_RT
-from src.domain.gtfs.enums import GTFSCityUrls
+from src.application.consumers.stop_update import StopUpdateStream
+from src.application.producers.registry import ProducerRegistry
+from src.application.producers.trip_update import TripIngestorService
 from src.application.services.gtfs_loader import GTFSLoaderService
+from src.domain.gtfs.enums import GTFSCityUrls
+from src.domain.gtfs_rt.enums import City, FeedType
+from src.infrastructure.database.redis.sink.stop_update import StopUpdateSink
+from src.infrastructure.external.rt.trip_update import TripUpdateGateway
+from src.infrastructure.messaging.kafka_admin import KafkaAdminTool
+from src.infrastructure.messaging.kafka_producer import KafkaProducerAdapter
+from src.infrastructure.processing.spark.consumer import SparkConsumerAdapter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,55 +29,32 @@ class Init:
         gtfs_loader.perform_import(GTFSCityUrls.MONTPELLIER)
 
     async def gtfs_rt_producer(self) -> None:
-        try:
-            run_state = 1
-            trip_update_kafka_producer = TripUpdateEventProducer()
-            await trip_update_kafka_producer.start()
-            await trip_update_kafka_producer.create_topic()
-            vehicle_kafka_producer = VehicleEventProducer()
-            await vehicle_kafka_producer.start()
-            await vehicle_kafka_producer.create_topic()
-            alert_kafka_producer = AlertEventProducer()
-            await alert_kafka_producer.start()
-            await alert_kafka_producer.create_topic()
+        kafka = KafkaProducerAdapter()
+        admin = KafkaAdminTool()
+        gateway = TripUpdateGateway()
+        service = TripIngestorService(gateway, kafka)
 
-            while True:
-                trip_update_container = TripUpdateContainer()
-                trip_update_list: list[
-                    TripUpdate
-                ] = await trip_update_container.extract(TAM_MMM_GTFS_RT.TRIP_UPDATE)
-                for trip_update in trip_update_list:
-                    await trip_update_kafka_producer.send_dataclass(trip_update)
+        await admin.ensure_topics([f.value for f in FeedType])
 
-                vehicle_container = VehicleContainer()
-                vehicle_list: list[Vehicle] = await vehicle_container.extract(
-                    TAM_MMM_GTFS_RT.VEHICLE_POSITION
+        await kafka.start()
+
+        while True:
+            try:
+                tasks = ProducerRegistry.get_tasks(
+                    city=City.MONTPELLIER, feed=FeedType.TRIP_UPDATE
                 )
 
-                for vehicle in vehicle_list:
-                    await vehicle_kafka_producer.send_dataclass(vehicle)
+                for task in tasks:
+                    await service.run(task)
 
-                alert_container = AlertContainer()
-                alert_list: list[Alert] = await alert_container.extract(
-                    TAM_MMM_GTFS_RT.ALERT
-                )
-
-                for alert in alert_list:
-                    await alert_kafka_producer.send_dataclass(alert)
-
-                if run_state:
-                    run_state = 0
-                    logger.info(
-                        f"Running {trip_update_container.__class__.__name__} and {vehicle_container.__class__.__name__} and {alert_container.__class__.__name__}"
-                    )
                 await asyncio.sleep(10)
-        except KeyboardInterrupt:
-            run_state = 0
-            await trip_update_kafka_producer.stop()
-            await vehicle_kafka_producer.stop()
-            await alert_kafka_producer.stop()
+            except KeyboardInterrupt:
+                break
+
+        await kafka.stop()
 
     def gtfs_rt_consumer(self) -> None:
-        test_stream = StopUpdateStream("StopUpdateStream")
-        query = test_stream.to_redis()
-        query.awaitTermination()
+        spark = SparkConsumerAdapter("StopUpdateStream")
+        sink = StopUpdateSink()
+        with StopUpdateStream(spark, sink) as stream:
+            stream.awaitTermination()

@@ -1,5 +1,5 @@
-import sys
 import asyncio
+import sys
 
 from .backend import BackEnd
 from .init import Init

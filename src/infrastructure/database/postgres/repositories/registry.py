@@ -9,9 +9,9 @@ from .agency import AgencyRepository
 from .calendar_date import CalendarDateRepository
 from .route import RouteRepository
 from .stop import StopRepository
+from .stop_time import StopTimeRepository
 from .transfer import TransferRepository
 from .trip import TripRepository
-from .stop_time import StopTimeRepository
 
 
 class RepositoryRegistry:

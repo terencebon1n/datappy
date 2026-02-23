@@ -31,15 +31,19 @@ class ProducerRegistry:
             for feed in FeedType:
                 url_enum = cls._URL_MAPPING.get(feed)
                 if url_enum and hasattr(url_enum, city.name):
-                    tasks.append(ProducerTask(
-                        city=city,
-                        feed_type=feed,
-                        url=getattr(url_enum, city.name).value
-                    ))
+                    tasks.append(
+                        ProducerTask(
+                            city=city,
+                            feed_type=feed,
+                            url=getattr(url_enum, city.name).value,
+                        )
+                    )
         return tasks
 
     @classmethod
-    def get_tasks(cls, city: Optional[City] = None, feed: Optional[FeedType] = None) -> List[ProducerTask]:
+    def get_tasks(
+        cls, city: Optional[City] = None, feed: Optional[FeedType] = None
+    ) -> List[ProducerTask]:
         all_tasks = cls.get_all_tasks()
         if city:
             all_tasks = [t for t in all_tasks if t.city == city]
