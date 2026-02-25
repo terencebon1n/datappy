@@ -1,6 +1,6 @@
 from pyspark.sql import DataFrame, SparkSession
 
-from src.config import AppConfig
+from src.infrastructure.config import AppConfig
 
 
 class SparkConsumerAdapter:
