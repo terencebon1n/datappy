@@ -2,7 +2,7 @@ import logging
 
 from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 
-from src.config import settings
+from src.infrastructure.config import settings
 
 logging.basicConfig(
     level=logging.INFO,

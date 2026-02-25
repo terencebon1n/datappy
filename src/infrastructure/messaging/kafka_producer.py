@@ -1,6 +1,6 @@
 from aiokafka import AIOKafkaProducer
 
-from src.config import settings
+from src.infrastructure.config import settings
 
 
 class KafkaProducerAdapter:

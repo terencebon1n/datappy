@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import Session, sessionmaker
 
-from ..config import settings
+from src.infrastructure.config import settings
 
 
-class DatabaseManager:
+class PostgresDatabaseManager:
     db_url: URL
 
     _engine: Engine
