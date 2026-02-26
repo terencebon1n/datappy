@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class KafkaAdminTool:
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = AIOKafkaAdminClient(bootstrap_servers=settings.kafka.brokers)
 
-    async def ensure_topics(self, topic_names: list[str]):
+    async def ensure_topics(self, topic_names: list[str]) -> None:
         await self.client.start()
         try:
             existing_topics = await self.client.list_topics()

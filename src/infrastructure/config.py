@@ -83,7 +83,7 @@ class AppConfig(BaseModel):
     kafka: KafkaConfig
 
     @classmethod
-    def from_yaml(cls, path: str):
+    def from_yaml(cls, path: str) -> AppConfig:
         with open(path, "r") as f:
             data = yaml.safe_load(f)
         return cls(**data)

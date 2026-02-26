@@ -1,6 +1,7 @@
 import json
+from typing import Iterator
 
-from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame, Row
 
 from src.infrastructure.database.redis.context import RedisPipelineContext
 from src.infrastructure.processing.spark.column import (
@@ -12,7 +13,7 @@ from src.infrastructure.processing.spark.column import (
 
 class StopUpdateSink:
     @staticmethod
-    def _to_json_payload(row) -> str:
+    def _to_json_payload(row: Row) -> str:
         payload = {
             "trip_id": row[TripColumns.TRIP_ID],
             "timestamp": str(row[KafkaColumns.TIMESTAMP]),
@@ -24,7 +25,7 @@ class StopUpdateSink:
         return json.dumps(payload)
 
     @classmethod
-    def _process_partition(cls, partition) -> None:
+    def _process_partition(cls, partition: Iterator[Row]) -> None:
         with RedisPipelineContext() as redis_ctx:
             for row in partition:
                 redis_key = f"{row[TripColumns.ROUTE_ID]}:{row[TripColumns.DIRECTION_ID]}:{row[StopTimeColumns.STOP_ID]}"

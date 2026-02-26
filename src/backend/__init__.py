@@ -11,13 +11,13 @@ from .dependencies import async_db_manager, db_manager, init
 from .router import gtfs_router
 
 
-async def drop_database():
+async def drop_database() -> None:
     db_manager.initialize()
     GTFSModelBase.metadata.drop_all(db_manager.engine)
     await db_manager.close()
 
 
-async def initialize_database():
+async def initialize_database() -> None:
     db_manager.initialize()
     db_manager.session.execute(CreateSchema("gtfs", if_not_exists=True))
     db_manager.session.commit()

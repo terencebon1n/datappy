@@ -8,10 +8,10 @@ from src.infrastructure.external.gtfs_zip_reader import GTFSZipReader
 
 
 class GTFSLoaderService:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session) -> None:
         self.session = session
 
-    def perform_import(self, url: GTFSCityUrls):
+    def perform_import(self, url: GTFSCityUrls) -> None:
         with GTFSZipReader(url) as reader:
             for file_type in RepositoryRegistry.supported_files():
                 # Check if the file exists in the ZIP

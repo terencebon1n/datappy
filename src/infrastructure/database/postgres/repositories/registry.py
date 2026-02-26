@@ -1,3 +1,4 @@
+from collections.abc import KeysView
 from typing import Dict, Type
 
 from sqlalchemy.orm import Session
@@ -37,5 +38,5 @@ class RepositoryRegistry:
         return repository_class(session)
 
     @classmethod
-    def supported_files(cls):
+    def supported_files(cls) -> KeysView[GTFSFileNames]:
         return cls._mapping.keys()
