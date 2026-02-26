@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import csv
 import io
 import zipfile
-from typing import Generator
+from types import TracebackType
+from typing import Generator, Optional, Type
 
 import requests
 
@@ -13,14 +16,19 @@ class GTFSZipReader:
         self.url = url
         self.zip_file: zipfile.ZipFile | None = None
 
-    def __enter__(self):
+    def __enter__(self) -> GTFSZipReader:
         response = requests.get(self.url, stream=True)
         response.raise_for_status()
 
         self.zip_file = zipfile.ZipFile(io.BytesIO(response.content))
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         if self.zip_file:
             self.zip_file.close()
 

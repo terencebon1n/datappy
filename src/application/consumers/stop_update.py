@@ -1,3 +1,6 @@
+from types import TracebackType
+from typing import Optional, Type
+
 import pyspark.sql.functions as sf
 from pyspark.sql import DataFrame
 from pyspark.sql.streaming.query import StreamingQuery
@@ -67,5 +70,10 @@ class StopUpdateStream:
             .start()
         )
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         self.spark_adapter.spark.stop()

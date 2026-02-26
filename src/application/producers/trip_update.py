@@ -5,12 +5,14 @@ from src.infrastructure.messaging.kafka_producer import KafkaProducerAdapter
 
 
 class TripIngestorService:
-    def __init__(self, client: TripUpdateGateway, kafka_adapter: KafkaProducerAdapter):
+    def __init__(
+        self, client: TripUpdateGateway, kafka_adapter: KafkaProducerAdapter
+    ) -> None:
         self.client = client
         self.kafka = kafka_adapter
         self.topic = "TripUpdate"
 
-    async def run(self, task: ProducerTask):
+    async def run(self, task: ProducerTask) -> None:
         raw_data = await self.client.fetch_rt(task.url)
         trip_updates: list[TripUpdate] = self.client.parse_feed(raw_data)
 

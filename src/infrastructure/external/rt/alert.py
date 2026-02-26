@@ -6,7 +6,7 @@ from src.domain.gtfs_rt.alert import Alert, InformedEntity, Period
 
 
 class AlertGateway:
-    def _extract_text(self, translation_msg) -> str:
+    def _extract_text(self, translation_msg: gtfs_realtime_pb2.TranslatedString) -> str:
         if not translation_msg.translation:
             return ""
         return translation_msg.translation[0].text

@@ -1,8 +1,8 @@
 import asyncio
 import sys
 
-from .backend import BackEnd
-from .init import Init
+from src import Init
+from src.backend import BackEnd
 
 
 def main() -> None:
