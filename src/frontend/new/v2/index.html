@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transit RT Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">GTFS Real-Time Viewer</h1>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">1. Transport Type</label>
+                <select id="routeType" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option value="">Loading types...</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">2. Route (Conveyance)</label>
+                <select id="conveyance" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" disabled>
+                    <option value="">Select a type first</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">3. Source (Origin)</label>
+                    <select id="sourceStop" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" disabled>
+                        <option value="">Select route first</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">4. Destination</label>
+                    <select id="destStop" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" disabled>
+                        <option value="">Select route first</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="fetchUpdate" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded hover:bg-indigo-700 disabled:bg-gray-400 transition" disabled>
+                Get Live Trip Updates
+            </button>
+        </div>
+
+        <div id="result" class="mt-6 bg-gray-900 text-green-400 p-4 rounded border border-gray-700 min-h-[150px] overflow-auto font-mono text-sm">
+            <p class="text-gray-500 italic">// Results will appear here...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8000"; 
+        
+        const elRouteType = document.getElementById('routeType');
+        const elConveyance = document.getElementById('conveyance');
+        const elSource = document.getElementById('sourceStop');
+        const elDest = document.getElementById('destStop');
+        const elBtn = document.getElementById('fetchUpdate');
+        const elResult = document.getElementById('result');
+
+        let socket = null;
+
+        // 1. Initial Load: Outputs list[RouteTypeDTO]
+        (async () => {
+            try {
+                const res = await fetch(`${API_BASE}/route-type`);
+                const data = await res.json();
+                elRouteType.innerHTML = '<option value="">-- Choose Type --</option>';
+                data.forEach(item => {
+                    // We store the Name in a data attribute to send the full DTO later
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.name;
+                    opt.dataset.name = item.name; 
+                    elRouteType.appendChild(opt);
+                });
+                elRouteType.disabled = false;
+            } catch (e) { elRouteType.innerHTML = "<option>Error 404/Network</option>"; }
+        })();
+
+        // --- 2. Change Type -> Get Conveyances (FIXED FOR UNDEFINED) ---
+        elRouteType.addEventListener('change', async (e) => {
+            resetFields(['conveyance', 'sourceStop', 'destStop', 'fetchUpdate']);
+            if (!e.target.value) return;
+
+            const selectedOption = elRouteType.options[elRouteType.selectedIndex];
+            
+            // 1. Send the full RouteTypeDTO as query params
+            const params = new URLSearchParams({
+                id: selectedOption.value,
+                name: selectedOption.dataset.name
+            });
+
+            try {
+                const res = await fetch(`${API_BASE}/conveyance?${params.toString()}`);
+                const data = await res.json(); 
+                
+                elConveyance.innerHTML = '<option value="">-- Choose Route --</option>';
+                
+                data.forEach(item => {
+                    // 2. LOGIC FIX: Handle either 'name' or 'short_name' + 'long_name'
+                    // This prevents the "undefined" error.
+                    const displayName = item.name 
+                        || (item.short_name ? `${item.short_name} - ${item.long_name}` : item.id);
+                    
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = displayName;
+                    // Store the name in dataset in case the next DTO needs it
+                    opt.dataset.name = displayName; 
+                    elConveyance.appendChild(opt);
+                });
+                
+                elConveyance.disabled = false;
+            } catch (err) {
+                elConveyance.innerHTML = '<option>Error loading routes</option>';
+            }
+        });
+
+        // 3. Change Conveyance -> Get Stops
+        elConveyance.addEventListener('change', async (e) => {
+            resetFields(['sourceStop', 'destStop', 'fetchUpdate']);
+            if (!e.target.value) return;
+
+            const res = await fetch(`${API_BASE}/stop?route_id=${e.target.value}`);
+            const data = await res.json(); // list[StopNameDTO]
+            
+            const options = '<option value="">-- Select Stop --</option>' + 
+                            data.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+            
+            elSource.innerHTML = elDest.innerHTML = options;
+            elSource.disabled = elDest.disabled = false;
+        });
+
+        [elSource, elDest].forEach(el => el.addEventListener('change', () => {
+            elBtn.disabled = !(elSource.value && elDest.value);
+        }));
+
+        // --- 4. Validation UI Logic ---
+        [elSource, elDest].forEach(el => el.addEventListener('change', () => {
+            elBtn.disabled = !(elSource.value && elDest.value);
+        }));
+
+        // --- 5. Resolve Direction (PathDTO) & Start Stream ---
+        elBtn.addEventListener('click', async () => {
+            elResult.innerHTML = "Resolving Directional IDs...";
+            if (socket) socket.close();
+            
+            try {
+                // Maps to PathDTO field names: route_id, stop_name__origin, stop_name__destination
+                const params = new URLSearchParams({
+                    route_id: elConveyance.value,
+                    stop_name__origin: elSource.value,
+                    stop_name__destination: elDest.value
+                });
+                
+                const dirRes = await fetch(`${API_BASE}/direction?${params.toString()}`);
+                const dirData = await dirRes.json(); // Returns DirectionDTO
+
+                if (dirData.direction_id === null) {
+                    elResult.innerHTML = "Error: No direct path resolved between these stops.";
+                    return;
+                }
+
+                // Use DirectionDTO fields to open WebSocket
+                const wsUrl = `ws://localhost:8000/stop-updates?route_id=${elConveyance.value}&direction_id=${dirData.direction_id}&stop_id=${dirData.stop_id__origin}`;
+                startWebSocket(wsUrl);
+
+            } catch (err) {
+                elResult.innerHTML = "Logical Error: " + err.message;
+            }
+        });
+
+        function startWebSocket(url) {
+            socket = new WebSocket(url);
+            socket.onopen = () => { elResult.innerHTML = "Connection Secure. Awaiting RT Feed..."; };
+            socket.onmessage = (event) => renderTable(JSON.parse(event.data));
+            socket.onerror = (err) => { elResult.innerHTML = "Stream Failure: Check Backend Socket"; };
+            socket.onclose = () => { console.log("Socket Disconnected"); };
+        }
+
+        function renderTable(trips) {
+            if (!trips || trips.length === 0) {
+                elResult.innerHTML = `<p class="text-gray-500 text-center py-10">No active trips found for this path currently.</p>`;
+                return;
+            }
+
+            const formatTime = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '--:--:--';
+
+            let html = `
+                <div class="flex items-center space-x-2 mb-4 text-xs font-bold text-green-400 uppercase tracking-widest">
+                    <div class="w-2 h-2 bg-green-400 rounded-full pulse"></div>
+                    <span>Live Tracking Active</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-gray-400 border-b border-gray-700 text-xs uppercase">
+                                <th class="py-2 px-4">Trip ID</th>
+                                <th class="py-2 px-4 text-center">Arrival</th>
+                                <th class="py-2 px-4 text-center">Delay</th>
+                                <th class="py-2 px-4 text-right">Update</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800">
+            `;
+
+            trips.forEach(trip => {
+                const delay = trip.arrival_delay || 0;
+                const delayClass = delay > 0 ? 'text-red-400' : (delay < 0 ? 'text-blue-400' : 'text-green-400');
+                const delayText = delay === 0 ? 'On Time' : `${delay > 0 ? '+' : ''}${Math.floor(delay / 60)}m ${Math.abs(delay % 60)}s`;
+
+                html += `
+                    <tr class="hover:bg-gray-800 transition">
+                        <td class="py-3 px-4 font-mono text-white text-xs">${trip.trip_id.split('-')[0]}</td>
+                        <td class="py-3 px-4 text-center text-indigo-300 font-bold font-mono">${formatTime(trip.arrival_time)}</td>
+                        <td class="py-3 px-4 text-center ${delayClass} font-mono">${delayText}</td>
+                        <td class="py-3 px-4 text-right text-gray-500 text-xs font-mono">${trip.timestamp ? trip.timestamp.split(' ')[1] : '--'}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table></div>`;
+            elResult.innerHTML = html;
+        }
+
+        function resetFields(ids) {
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el.tagName === 'SELECT') {
+                    el.innerHTML = '<option value="">-- Waiting --</option>';
+                    el.disabled = true;
+                } else {
+                    el.disabled = true;
+                }
+            });
+            if (socket) socket.close();
+            elResult.innerHTML = '<p class="text-gray-500 italic">// Selection reset...</p>';
+        }
+    </script>
+</body>
+</html>

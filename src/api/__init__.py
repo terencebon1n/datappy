@@ -5,10 +5,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.schema import CreateSchema
 
+from src.api.dependencies import async_db_manager
+from src.api.v1.endpoints.transit import gtfs_router
 from src.infrastructure.database.postgres.base import GTFSModelBase
 
-from .dependencies import async_db_manager, db_manager, init
-from .router import gtfs_router
+from .dependencies import db_manager, init
 
 
 async def drop_database() -> None:
@@ -29,7 +30,7 @@ async def initialize_database() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load
-    await initialize_database()
+    #    await initialize_database()
     async_db_manager.initialize()
     yield
     # Clean up
@@ -62,7 +63,7 @@ app.include_router(gtfs_router)
 class BackEnd:
     def start(self) -> None:
         uvicorn.run(
-            "src.backend.__init__:app",
+            "src.api.__init__:app",
             host="0.0.0.0",
             port=8000,
             reload=False,

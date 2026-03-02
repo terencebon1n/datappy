@@ -1,3 +1,4 @@
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from src.domain.gtfs.calendar_date import CalendarDate
@@ -11,5 +12,5 @@ class CalendarDateRepository(BaseRepository[CalendarDate, CalendarDateModel]):
     domain = CalendarDate
     model = CalendarDateModel
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session | AsyncSession) -> None:
         super().__init__(session)
