@@ -2,7 +2,7 @@ import asyncio
 import sys
 
 from src import Init
-from src.backend import BackEnd
+from src.api import BackEnd
 
 
 def main() -> None:

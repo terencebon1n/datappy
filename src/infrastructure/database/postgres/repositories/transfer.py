@@ -1,3 +1,4 @@
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from src.domain.gtfs.transfer import Transfer
@@ -9,5 +10,5 @@ class TransferRepository(BaseRepository[Transfer, TransferModel]):
     domain = Transfer
     model = TransferModel
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session | AsyncSession) -> None:
         super().__init__(session)

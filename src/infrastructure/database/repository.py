@@ -3,7 +3,9 @@ from itertools import islice
 from typing import Iterable, Type, TypeVar
 
 from pydantic import BaseModel
+from sqlalchemy import Result, Select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from .postgres.base import GTFSModelBase
@@ -26,9 +28,19 @@ class BaseRepository[TDomain, TModel]:
 
     def __init__(
         self,
-        session: Session,
+        session: Session | AsyncSession,
     ) -> None:
         self.session = session
+
+    async def execute_select(self, select_query: Select) -> Result:
+        if isinstance(self.session, AsyncSession):
+            result = await self.session.execute(select_query)
+        elif isinstance(self.session, Session):
+            result = self.session.execute(select_query)
+        else:
+            raise Exception("Unknown session type")
+
+        return result
 
     def bulk_add(self, generator: Iterable[dict], batch_size: int = 5000) -> None:
         i = 0

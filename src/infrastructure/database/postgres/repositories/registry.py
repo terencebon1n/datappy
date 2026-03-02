@@ -1,6 +1,7 @@
 from collections.abc import KeysView
 from typing import Dict, Type
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from src.domain.gtfs.enums import GTFSFileNames
@@ -28,7 +29,7 @@ class RepositoryRegistry:
 
     @classmethod
     def get_repository_for_file(
-        cls, file_type: GTFSFileNames, session: Session
+        cls, file_type: GTFSFileNames, session: Session | AsyncSession
     ) -> BaseRepository:
         repository_class = cls._mapping.get(file_type)
 

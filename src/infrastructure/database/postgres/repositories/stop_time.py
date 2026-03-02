@@ -1,3 +1,4 @@
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from src.domain.gtfs.stop_time import StopTime
@@ -9,5 +10,5 @@ class StopTimeRepository(BaseRepository):
     domain = StopTime
     model = StopTimeModel
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session | AsyncSession) -> None:
         super().__init__(session)
