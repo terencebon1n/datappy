@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from sqlalchemy.orm import Session
+from sqlalchemy.schema import CreateSchema
 
 from src.application.consumers.stop_update import StopUpdateStream
 from src.application.producers.registry import ProducerRegistry
@@ -9,6 +10,8 @@ from src.application.producers.trip_update import TripIngestorService
 from src.application.services.gtfs_loader import GTFSLoaderService
 from src.domain.gtfs.enums import GTFSCityUrls
 from src.domain.gtfs_rt.enums import City, FeedType
+from src.infrastructure.database.postgres.base import GTFSModelBase
+from src.infrastructure.database.postgres.manager import PostgresDatabaseManager
 from src.infrastructure.database.redis.sink.stop_update import StopUpdateSink
 from src.infrastructure.external.rt.trip_update import TripUpdateGateway
 from src.infrastructure.messaging.kafka_admin import KafkaAdminTool
@@ -24,9 +27,20 @@ logger = logging.getLogger(__name__)
 
 
 class Init:
-    def load_gtfs(self, session: Session) -> None:
-        gtfs_loader = GTFSLoaderService(session)
+    async def gtfs_populate(self) -> None:
+        db_manager = PostgresDatabaseManager(is_async=False)
+        db_manager.initialize()
+
+        GTFSModelBase.metadata.drop_all(db_manager.engine)
+
+        db_manager.session.execute(CreateSchema("gtfs", if_not_exists=True))
+        db_manager.session.commit()
+        GTFSModelBase.metadata.create_all(db_manager.engine)
+
+        gtfs_loader = GTFSLoaderService(db_manager.session)
         gtfs_loader.perform_import(GTFSCityUrls.MONTPELLIER)
+
+        await db_manager.close()
 
     async def gtfs_rt_producer(self) -> None:
         kafka = KafkaProducerAdapter()
