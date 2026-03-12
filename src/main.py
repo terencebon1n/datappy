@@ -13,6 +13,9 @@ def main() -> None:
             case "backend":
                 backend = BackEnd()
                 backend.start()
+            case "populate":
+                init = Init()
+                asyncio.run(init.gtfs_populate())
             case "producer":
                 init = Init()
                 asyncio.run(init.gtfs_rt_producer())

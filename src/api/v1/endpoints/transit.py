@@ -3,7 +3,8 @@ from typing import Annotated, Optional
 
 from fastapi import Query, WebSocket, WebSocketDisconnect
 
-from src.api.dependencies import async_db_manager, redis_db
+from src.api import async_db_manager
+from src.api.dependencies import redis_db
 from src.application.dto.route import ConveyanceDTO, RouteIdDTO, RouteTypeDTO
 from src.application.dto.stop import StopNameDTO, TransitPathDTO
 from src.application.dto.trip import DirectionDTO, PathDTO
@@ -53,12 +54,19 @@ async def ws_stop_updates(
     websocket: WebSocket, selection: Annotated[TransitPathDTO, Query()]
 ) -> None:
     await websocket.accept()
-    last_data: Optional[list[StopUpdate]] = None
-    try:
+
+    async def monitor_connection() -> None:
+        try:
+            while True:
+                await websocket.receive_text()
+        except WebSocketDisconnect:
+            return
+
+    async def produce_updates() -> None:
+        feed = StopUpdateFeed(redis_db)
+        last_data: Optional[list[StopUpdate]] = None
         while True:
-            data: list[StopUpdate] = await StopUpdateFeed(redis_db).get_updates(
-                selection
-            )
+            data: list[StopUpdate] = await feed.get_updates(selection)
             if data != last_data:
                 await websocket.send_json(
                     [stop_update.model_dump() for stop_update in data]
@@ -67,6 +75,10 @@ async def ws_stop_updates(
 
             await asyncio.sleep(5)
 
-    except WebSocketDisconnect:
-        await websocket.close()
-        print("Client disconnected")
+    await asyncio.wait(
+        [
+            asyncio.create_task(produce_updates()),
+            asyncio.create_task(monitor_connection()),
+        ],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
