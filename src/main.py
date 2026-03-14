@@ -1,31 +1,22 @@
-import asyncio
 import sys
 
-from src import Init
-from src.api import BackEnd
+from src.application.services.api import ApiService
+from src.application.services.consumer import ConsumerService
+from src.application.services.enums import ServiceCommand
+from src.application.services.populate import PopulateService
+from src.application.services.producer import ProducerService
+from src.application.services.registry import ServiceRegistry
 
 
 def main() -> None:
-    args = sys.argv[1:]
+    registry = ServiceRegistry()
+    registry.register(ServiceCommand.API, lambda: ApiService())
+    registry.register(ServiceCommand.POPULATE, lambda: PopulateService())
+    registry.register(ServiceCommand.PRODUCER, lambda: ProducerService())
+    registry.register(ServiceCommand.CONSUMER, lambda: ConsumerService())
 
-    for arg in args:
-        match arg:
-            case "backend":
-                backend = BackEnd()
-                backend.start()
-            case "populate":
-                init = Init()
-                asyncio.run(init.gtfs_populate())
-            case "producer":
-                init = Init()
-                asyncio.run(init.gtfs_rt_producer())
-            case "consumer":
-                init = Init()
-                init.gtfs_rt_consumer()
-            case "frontend":
-                print("frontend starting")
-            case _:
-                raise Exception
+    for arg in sys.argv[1:]:
+        registry.run(arg)
 
 
 if __name__ == "__main__":

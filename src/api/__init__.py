@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 
-import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -35,14 +34,3 @@ app.add_middleware(
 )
 
 app.include_router(gtfs_router)
-
-
-class BackEnd:
-    def start(self) -> None:
-        uvicorn.run(
-            "src.api.__init__:app",
-            host="0.0.0.0",
-            port=8000,
-            reload=False,
-            log_level="info",
-        )
