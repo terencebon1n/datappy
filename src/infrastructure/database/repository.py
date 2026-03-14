@@ -48,8 +48,11 @@ class BaseRepository[TDomain, TModel]:
             batch_raw = list(islice(generator, batch_size))
             if not batch_raw:
                 break
-
-            batch_domain = [self.domain(**row) for row in batch_raw]
+            try:
+                batch_domain = [self.domain(**row) for row in batch_raw]
+            except Exception as e:
+                print(batch_raw[0])
+                raise e
             mappings = [obj.model_dump() for obj in batch_domain]
 
             self.session.execute(

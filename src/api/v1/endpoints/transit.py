@@ -8,10 +8,10 @@ from src.api.dependencies import redis_db
 from src.application.dto.route import ConveyanceDTO, RouteIdDTO, RouteTypeDTO
 from src.application.dto.stop import StopNameDTO, TransitPathDTO
 from src.application.dto.trip import DirectionDTO, PathDTO
-from src.application.services.route_loader import RouteLoaderService
-from src.application.services.stop_loader import StopLoaderService
-from src.application.services.stop_update_feed import StopUpdateFeed
-from src.application.services.trip_loader import TripLoaderService
+from src.application.services.api.route_loader import RouteLoaderService
+from src.application.services.api.stop_loader import StopLoaderService
+from src.application.services.api.stop_update_feed import StopUpdateFeed
+from src.application.services.api.trip_loader import TripLoaderService
 from src.domain.gtfs_rt.stop_update import StopUpdate
 
 from ..router import gtfs_router
