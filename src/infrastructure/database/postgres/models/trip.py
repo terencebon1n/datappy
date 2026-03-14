@@ -15,7 +15,6 @@ class TripModel(GTFSModelBase):
     route_id: Mapped[str] = mapped_column(String, ForeignKey(RouteModel.id))
     service_id: Mapped[str] = mapped_column(String)
     headsign: Mapped[str] = mapped_column(String)
-    short_name: Mapped[str] = mapped_column(String)
     direction_id: Mapped[int] = mapped_column(Integer)
     wheelchair_accessible: Mapped[Optional[bool]] = mapped_column(Boolean)
     bikes_allowed: Mapped[Optional[bool]] = mapped_column(Boolean)

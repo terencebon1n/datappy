@@ -8,7 +8,6 @@ class Trip(BaseModel):
     service_id: str = Field(alias="service_id")
     id: str = Field(alias="trip_id")
     headsign: str = Field(alias="trip_headsign")
-    short_name: str = Field(alias="trip_short_name")
     direction_id: int = Field(alias="direction_id")
     wheelchair_accessible: Optional[bool] = Field(alias="wheelchair_accessible")
     bikes_allowed: Optional[bool] = Field(alias="bikes_allowed")
