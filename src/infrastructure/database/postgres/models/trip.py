@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, String
+from sqlalchemy import ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship, remote
 
 from src.infrastructure.database.postgres.base import GTFSModelBase
@@ -15,9 +15,13 @@ class TripModel(GTFSModelBase):
     route_id: Mapped[str] = mapped_column(String, ForeignKey(RouteModel.id))
     service_id: Mapped[str] = mapped_column(String)
     headsign: Mapped[str] = mapped_column(String)
+    short_name: Mapped[Optional[str]] = mapped_column(String)
     direction_id: Mapped[int] = mapped_column(Integer)
-    wheelchair_accessible: Mapped[Optional[bool]] = mapped_column(Boolean)
-    bikes_allowed: Mapped[Optional[bool]] = mapped_column(Boolean)
+    block_id: Mapped[Optional[str]] = mapped_column(String)
+    shape_id: Mapped[Optional[str]] = mapped_column(String)
+    wheelchair_accessible: Mapped[Optional[int]] = mapped_column(Integer)
+    bikes_allowed: Mapped[Optional[int]] = mapped_column(Integer)
+    cars_allowed: Mapped[Optional[int]] = mapped_column(Integer)
 
     service_dates = relationship(
         CalendarDateModel,
