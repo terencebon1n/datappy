@@ -13,4 +13,4 @@ class TransitPathDTO(BaseModel):
     @field_validator("route_id", "stop_id", mode="before")
     @classmethod
     def validate_id(cls, v: str) -> str:
-        return v.replace(':', '_')
+        return v.replace(":", "_")

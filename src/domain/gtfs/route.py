@@ -15,6 +15,8 @@ class Route(BaseModel):
     text_color: Optional[str] = Field(alias="route_text_color", default=None)
     sort_order: Optional[int] = Field(alias="route_sort_order", default=None)
     continuous_pickup: Optional[int] = Field(alias="continuous_pickup", default=None)
-    continuous_drop_off: Optional[int] = Field(alias="continuous_drop_off", default=None)
+    continuous_drop_off: Optional[int] = Field(
+        alias="continuous_drop_off", default=None
+    )
     network_id: Optional[str] = Field(alias="network_id", default=None)
     cemv_support: Optional[str] = Field(alias="cemv_support", default=None)

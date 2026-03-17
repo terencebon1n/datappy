@@ -21,9 +21,7 @@ class ProducerService:
 
         while True:
             try:
-                tasks = ProducerRegistry.get_tasks(
-                    city=city, feed=FeedType.TRIP_UPDATE
-                )
+                tasks = ProducerRegistry.get_tasks(city=city, feed=FeedType.TRIP_UPDATE)
 
                 for task in tasks:
                     await service.run(task)

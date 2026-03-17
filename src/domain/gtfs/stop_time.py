@@ -13,11 +13,19 @@ class StopTime(BaseModel):
     pickup_type: Optional[int] = Field(alias="pickup_type", default=None)
     drop_off_type: Optional[int] = Field(alias="drop_off_type", default=None)
     continuous_pickup: Optional[int] = Field(alias="continuous_pickup", default=None)
-    continuous_drop_off: Optional[int] = Field(alias="continuous_drop_off", default=None)
-    shape_dist_traveled: Optional[float] = Field(alias="shape_dist_traveled", default=None)
+    continuous_drop_off: Optional[int] = Field(
+        alias="continuous_drop_off", default=None
+    )
+    shape_dist_traveled: Optional[float] = Field(
+        alias="shape_dist_traveled", default=None
+    )
     timepoint: Optional[int] = Field(alias="timepoint", default=None)
-    pickup_booking_rule_id: Optional[str] = Field(alias="pickup_booking_rule_id", default=None)
-    drop_off_booking_rule_id: Optional[str] = Field(alias="drop_off_booking_rule_id", default=None)
+    pickup_booking_rule_id: Optional[str] = Field(
+        alias="pickup_booking_rule_id", default=None
+    )
+    drop_off_booking_rule_id: Optional[str] = Field(
+        alias="drop_off_booking_rule_id", default=None
+    )
 
     @field_validator("shape_dist_traveled", mode="before")
     @classmethod
