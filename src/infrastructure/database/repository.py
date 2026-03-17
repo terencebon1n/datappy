@@ -52,7 +52,7 @@ class BaseRepository[TDomain, TModel]:
             for row in batch_raw:
                 try:
                     domain: TDomain = self.domain(**row)
-                    mappings.append(domain.model_dump()) 
+                    mappings.append(domain.model_dump())
                 except Exception as e:
                     print(row)
                     raise e

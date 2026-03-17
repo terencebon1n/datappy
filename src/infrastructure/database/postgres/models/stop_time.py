@@ -16,9 +16,7 @@ class StopTimeModel(GTFSModelBase):
     )
     arrival_time: Mapped[str] = mapped_column(String)
     departure_time: Mapped[str] = mapped_column(String)
-    stop_id: Mapped[str] = mapped_column(
-        String, ForeignKey(StopModel.id)
-    )
+    stop_id: Mapped[str] = mapped_column(String, ForeignKey(StopModel.id))
     stop_sequence: Mapped[int] = mapped_column(Integer, primary_key=True)
     stop_headsign: Mapped[Optional[str]] = mapped_column(String)
     pickup_type: Mapped[int] = mapped_column(Integer)

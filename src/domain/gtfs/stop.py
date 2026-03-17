@@ -16,6 +16,8 @@ class Stop(BaseModel):
     location_type: Optional[str] = Field(alias="location_type", default=None)
     parent_station: Optional[str] = Field(alias="parent_station")
     timezone: Optional[str] = Field(alias="stop_timezone", default=None)
-    wheelchair_boarding: Optional[int] = Field(alias="wheelchair_boarding", default=None)
+    wheelchair_boarding: Optional[int] = Field(
+        alias="wheelchair_boarding", default=None
+    )
     level_id: Optional[str] = Field(alias="level_id", default=None)
     platform_code: Optional[str] = Field(alias="platform_code", default=None)
