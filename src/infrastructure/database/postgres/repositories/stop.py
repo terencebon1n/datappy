@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from src.domain.gtfs.stop import Stop
-from src.infrastructure.database.postgres.models.calendar_date import CalendarDateModel
 from src.infrastructure.database.postgres.models.stop import StopModel
 from src.infrastructure.database.postgres.models.stop_time import StopTimeModel
 from src.infrastructure.database.postgres.models.trip import TripModel
@@ -25,13 +24,9 @@ class StopRepository(BaseRepository[Stop, StopModel]):
             select(distinct(self.model.name))
             .join(StopTimeModel, StopTimeModel.stop_id == self.model.id)
             .join(TripModel, StopTimeModel.trip_id == TripModel.id)
-            .join(
-                CalendarDateModel, CalendarDateModel.service_id == TripModel.service_id
-            )
             .where(
                 and_(
                     TripModel.route_id == route_id,
-                    CalendarDateModel.date == date.today().strftime("%Y%m%d"),
                 )
             )
             .order_by(self.model.name)
