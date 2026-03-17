@@ -42,18 +42,20 @@ class BaseRepository[TDomain, TModel]:
 
         return result
 
-    def bulk_add(self, generator: Iterable[dict], batch_size: int = 5000) -> None:
+    def bulk_add(self, generator: Iterable[dict], batch_size: int = 2000) -> None:
         i = 0
         while True:
             batch_raw = list(islice(generator, batch_size))
             if not batch_raw:
                 break
-            try:
-                batch_domain = [self.domain(**row) for row in batch_raw]
-            except Exception as e:
-                print(batch_raw[0])
-                raise e
-            mappings = [obj.model_dump() for obj in batch_domain]
+            mappings = []
+            for row in batch_raw:
+                try:
+                    domain: TDomain = self.domain(**row)
+                    mappings.append(domain.model_dump()) 
+                except Exception as e:
+                    print(row)
+                    raise e
 
             self.session.execute(
                 insert(self.model).values(mappings).on_conflict_do_nothing()
