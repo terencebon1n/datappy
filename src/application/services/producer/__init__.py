@@ -9,7 +9,7 @@ from src.infrastructure.messaging.kafka_producer import KafkaProducerAdapter
 
 
 class ProducerService:
-    async def start(self) -> None:
+    async def start(self, city: City) -> None:
         kafka = KafkaProducerAdapter()
         admin = KafkaAdminTool()
         gateway = TripUpdateGateway()
@@ -22,7 +22,7 @@ class ProducerService:
         while True:
             try:
                 tasks = ProducerRegistry.get_tasks(
-                    city=City.MONTPELLIER, feed=FeedType.TRIP_UPDATE
+                    city=city, feed=FeedType.TRIP_UPDATE
                 )
 
                 for task in tasks:

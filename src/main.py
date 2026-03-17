@@ -15,8 +15,7 @@ def main() -> None:
     registry.register(ServiceCommand.PRODUCER, lambda: ProducerService())
     registry.register(ServiceCommand.CONSUMER, lambda: ConsumerService())
 
-    for arg in sys.argv[1:]:
-        registry.run(arg)
+    registry.run(*sys.argv[1:])
 
 
 if __name__ == "__main__":
