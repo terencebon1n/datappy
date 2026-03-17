@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class StopNameDTO(BaseModel):
@@ -6,6 +6,11 @@ class StopNameDTO(BaseModel):
 
 
 class TransitPathDTO(BaseModel):
-    route_id: int = Field(description="Route ID")
+    route_id: str = Field(description="Route ID")
     direction_id: int = Field(description="Direction ID")
-    stop_id: int = Field(description="Stop ID")
+    stop_id: str = Field(description="Stop ID")
+
+    @field_validator("route_id", "stop_id", mode="before")
+    @classmethod
+    def validate_id(cls, v: str) -> str:
+        return v.replace(':', '_')

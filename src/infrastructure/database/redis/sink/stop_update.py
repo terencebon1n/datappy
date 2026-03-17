@@ -28,7 +28,10 @@ class StopUpdateSink:
     def _process_partition(cls, partition: Iterator[Row]) -> None:
         with RedisPipelineContext() as redis_ctx:
             for row in partition:
-                redis_key = f"{row[TripColumns.ROUTE_ID]}:{row[TripColumns.DIRECTION_ID]}:{row[StopTimeColumns.STOP_ID]}"
+                route_id = row[TripColumns.ROUTE_ID].replace(":", "_")
+                stop_id = row[StopTimeColumns.STOP_ID].replace(":", "_")
+
+                redis_key = f"{route_id}:{row[TripColumns.DIRECTION_ID]}:{stop_id}"
                 field_key = row[TripColumns.TRIP_ID]
                 json_data = cls._to_json_payload(row)
 
