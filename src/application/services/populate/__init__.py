@@ -2,12 +2,13 @@ from sqlalchemy.schema import CreateSchema
 
 from src.application.services.populate.gtfs_loader import GTFSLoaderService
 from src.domain.gtfs.enums import GTFSCityUrls
+from src.domain.gtfs_rt.enums import City
 from src.infrastructure.database.postgres.base import GTFSModelBase
 from src.infrastructure.database.postgres.manager import PostgresDatabaseManager
 
 
 class PopulateService:
-    async def start(self) -> None:
+    async def start(self, city: City) -> None:
         db_manager = PostgresDatabaseManager(is_async=False)
         db_manager.initialize()
 
@@ -18,6 +19,6 @@ class PopulateService:
         GTFSModelBase.metadata.create_all(db_manager.engine)
 
         gtfs_loader = GTFSLoaderService(db_manager.session)
-        gtfs_loader.perform_import(GTFSCityUrls.MONTPELLIER)
+        gtfs_loader.perform_import(GTFSCityUrls[city.name])
 
         await db_manager.close()
