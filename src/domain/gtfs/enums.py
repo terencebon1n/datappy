@@ -5,6 +5,7 @@ class GTFSFileNames(StrEnum):
     AGENCY = "agency.txt"
     CALENDAR_DATES = "calendar_dates.txt"
     ROUTES = "routes.txt"
+    SHAPES = "shapes.txt"
     STOPS = "stops.txt"
     STOP_TIMES = "stop_times.txt"
     TRANSFERS = "transfers.txt"
