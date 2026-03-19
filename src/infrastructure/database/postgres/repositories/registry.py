@@ -10,6 +10,7 @@ from src.infrastructure.database.repository import BaseRepository
 from .agency import AgencyRepository
 from .calendar import CalendarRepository
 from .calendar_date import CalendarDateRepository
+from .feed_info import FeedInfoRepository
 from .route import RouteRepository
 from .shape import ShapeRepository
 from .stop import StopRepository
@@ -23,6 +24,7 @@ class RepositoryRegistry:
         GTFSFileNames.AGENCY: AgencyRepository,
         GTFSFileNames.CALENDAR: CalendarRepository,
         GTFSFileNames.CALENDAR_DATES: CalendarDateRepository,
+        GTFSFileNames.FEED_INFO: FeedInfoRepository,
         GTFSFileNames.ROUTES: RouteRepository,
         GTFSFileNames.STOPS: StopRepository,
         GTFSFileNames.TRANSFERS: TransferRepository,
