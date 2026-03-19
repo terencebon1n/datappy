@@ -8,6 +8,7 @@ from src.domain.gtfs.enums import GTFSFileNames
 from src.infrastructure.database.repository import BaseRepository
 
 from .agency import AgencyRepository
+from .calendar import CalendarRepository
 from .calendar_date import CalendarDateRepository
 from .route import RouteRepository
 from .shape import ShapeRepository
@@ -20,6 +21,7 @@ from .trip import TripRepository
 class RepositoryRegistry:
     _mapping: Dict[GTFSFileNames, Type[BaseRepository]] = {
         GTFSFileNames.AGENCY: AgencyRepository,
+        GTFSFileNames.CALENDAR: CalendarRepository,
         GTFSFileNames.CALENDAR_DATES: CalendarDateRepository,
         GTFSFileNames.ROUTES: RouteRepository,
         GTFSFileNames.STOPS: StopRepository,

@@ -3,6 +3,7 @@ from enum import StrEnum
 
 class GTFSFileNames(StrEnum):
     AGENCY = "agency.txt"
+    CALENDAR = "calendar.txt"
     CALENDAR_DATES = "calendar_dates.txt"
     ROUTES = "routes.txt"
     SHAPES = "shapes.txt"
