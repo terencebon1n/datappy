@@ -10,6 +10,7 @@ from src.infrastructure.database.repository import BaseRepository
 from .agency import AgencyRepository
 from .calendar_date import CalendarDateRepository
 from .route import RouteRepository
+from .shape import ShapeRepository
 from .stop import StopRepository
 from .stop_time import StopTimeRepository
 from .transfer import TransferRepository
@@ -24,6 +25,7 @@ class RepositoryRegistry:
         GTFSFileNames.STOPS: StopRepository,
         GTFSFileNames.TRANSFERS: TransferRepository,
         GTFSFileNames.TRIPS: TripRepository,
+        GTFSFileNames.SHAPES: ShapeRepository,
         GTFSFileNames.STOP_TIMES: StopTimeRepository,
     }
 
