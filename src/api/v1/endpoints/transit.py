@@ -63,7 +63,7 @@ async def ws_stop_updates(
             return
 
     async def produce_updates() -> None:
-        feed = StopUpdateFeed(redis_db)
+        feed = StopUpdateFeed(redis_db, async_db_manager.async_session)
         last_data: Optional[list[StopUpdate]] = None
         while True:
             data: list[StopUpdate] = await feed.get_updates(selection)

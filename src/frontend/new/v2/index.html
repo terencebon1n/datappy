@@ -170,7 +170,7 @@
                 }
 
                 // Use DirectionDTO fields to open WebSocket
-                const wsUrl = `ws://localhost:8000/stop-updates?route_id=${elConveyance.value}&direction_id=${dirData.direction_id}&stop_id=${dirData.stop_id__origin}`;
+                const wsUrl = `ws://localhost:8000/stop-updates?route_id=${elConveyance.value}&direction_id=${dirData.direction_id}&stop_id__origin=${dirData.stop_id__origin}&stop_id__destination=${dirData.stop_id__destination}`;
                 startWebSocket(wsUrl);
 
             } catch (err) {
