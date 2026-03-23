@@ -12,9 +12,9 @@ class StopUpdateRepository:
 
     async def get_stop_updates(
         self,
-        route_id: int,
+        route_id: str,
         direction_id: int,
-        stop_id: int,
+        stop_id: str,
     ) -> List[StopUpdate]:
         key = f"{route_id}:{direction_id}:{stop_id}"
 
