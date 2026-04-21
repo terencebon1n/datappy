@@ -1,7 +1,12 @@
 import asyncio
 from typing import Annotated, Optional
 
-from fastapi import Query, WebSocket, WebSocketDisconnect
+from fastapi import (
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import async_db_manager
 from src.api.dependencies import redis_db
@@ -14,42 +19,44 @@ from src.application.services.api.stop_update_feed import StopUpdateFeed
 from src.application.services.api.trip_loader import TripLoaderService
 from src.domain.gtfs_rt.stop_update import StopUpdate
 
-from ..router import gtfs_router
+from ..router import gtfs_router, gtfs_rt_router
 
 
 @gtfs_router.get("/route-type", response_model=list[RouteTypeDTO])
 async def get_route_types() -> list[RouteTypeDTO]:
-    return await RouteLoaderService(async_db_manager.async_session).get_route_types()
+    async with AsyncSession(async_db_manager.async_engine) as session:
+        async with session.begin():
+            return await RouteLoaderService(session).get_route_types()
 
 
 @gtfs_router.get("/conveyance", response_model=list[ConveyanceDTO])
 async def get_conveyances(
     selection: Annotated[RouteTypeDTO, Query()],
 ) -> list[ConveyanceDTO]:
-    return await RouteLoaderService(async_db_manager.async_session).get_conveyances(
-        selection.id
-    )
+    async with AsyncSession(async_db_manager.async_engine) as session:
+        async with session.begin():
+            return await RouteLoaderService(session).get_conveyances(selection.id)
 
 
 @gtfs_router.get("/stop", response_model=list[StopNameDTO])
 async def get_stops(
     selection: Annotated[RouteIdDTO, Query()],
 ) -> list[StopNameDTO]:
-    return await StopLoaderService(async_db_manager.async_session).get_stop_names(
-        selection.route_id
-    )
+    async with AsyncSession(async_db_manager.async_engine) as session:
+        async with session.begin():
+            return await StopLoaderService(session).get_stop_names(selection.route_id)
 
 
 @gtfs_router.get("/direction", response_model=DirectionDTO)
 async def get_direction(
     selection: Annotated[PathDTO, Query()],
 ) -> DirectionDTO:
-    return await TripLoaderService(async_db_manager.async_session).get_direction(
-        selection
-    )
+    async with AsyncSession(async_db_manager.async_engine) as session:
+        async with session.begin():
+            return await TripLoaderService(session).get_direction(selection)
 
 
-@gtfs_router.websocket("/stop-updates")
+@gtfs_rt_router.websocket("/stop-updates")
 async def ws_stop_updates(
     websocket: WebSocket, selection: Annotated[TransitPathDTO, Query()]
 ) -> None:
@@ -63,22 +70,31 @@ async def ws_stop_updates(
             return
 
     async def produce_updates() -> None:
-        feed = StopUpdateFeed(redis_db, async_db_manager.async_session)
-        last_data: Optional[list[StopUpdate]] = None
-        while True:
-            data: list[StopUpdate] = await feed.get_updates(selection)
-            if data != last_data:
-                await websocket.send_json(
-                    [stop_update.model_dump() for stop_update in data]
-                )
-                last_data = data
+        async with AsyncSession(async_db_manager.async_engine) as session:
+            async with session.begin():
+                feed = StopUpdateFeed(redis_db, session)
+                last_data: Optional[list[StopUpdate]] = None
+                while True:
+                    data: list[StopUpdate] = await feed.get_updates(selection)
+                    if data != last_data:
+                        await websocket.send_json(
+                            [stop_update.model_dump() for stop_update in data]
+                        )
+                        last_data = data
 
-            await asyncio.sleep(5)
+                    await asyncio.sleep(5)
 
-    await asyncio.wait(
-        [
-            asyncio.create_task(produce_updates()),
-            asyncio.create_task(monitor_connection()),
-        ],
-        return_when=asyncio.FIRST_COMPLETED,
-    )
+    tasks = [
+        asyncio.create_task(produce_updates()),
+        asyncio.create_task(monitor_connection()),
+    ]
+
+    _, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+    for task in pending:
+        task.cancel()
+
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass

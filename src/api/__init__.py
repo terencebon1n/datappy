@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.dependencies import async_db_manager
-from src.api.v1.endpoints.transit import gtfs_router
+from src.api.v1.endpoints.transit import gtfs_router, gtfs_rt_router
 
 
 @asynccontextmanager
@@ -34,3 +34,4 @@ app.add_middleware(
 )
 
 app.include_router(gtfs_router)
+app.include_router(gtfs_rt_router)

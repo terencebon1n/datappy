@@ -1,3 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-gtfs_router = APIRouter()
+from src.api.v1.context import set_city_context
+
+gtfs_router = APIRouter(dependencies=[Depends(set_city_context)])
+
+gtfs_rt_router = APIRouter()

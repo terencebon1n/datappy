@@ -1,11 +1,14 @@
-from src.application.consumers.stop_update import StopUpdateStream
-from src.infrastructure.database.redis.sink.stop_update import StopUpdateSink
-from src.infrastructure.processing.spark.consumer import SparkConsumerAdapter
+from src.application.consumers.quixstreams.stop_update import (
+    QuixStreamsStopUpdateStream,
+)
+from src.domain.gtfs_rt.enums import City
+from src.infrastructure.processing.quixstreams.consumer import (
+    QuixStreamsConsumerAdapter,
+)
 
 
-class ConsumerService:
-    def start(self) -> None:
-        spark = SparkConsumerAdapter("StopUpdateStream")
-        sink = StopUpdateSink()
-        with StopUpdateStream(spark, sink) as stream:
-            stream.awaitTermination()
+class QuixStreamsConsumerService:
+    def start(self, city: City) -> None:
+        quix = QuixStreamsConsumerAdapter()
+        with QuixStreamsStopUpdateStream(quix, city) as stream:
+            stream.run()
