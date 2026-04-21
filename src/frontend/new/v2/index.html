@@ -70,7 +70,9 @@
         // 1. Initial Load: Outputs list[RouteTypeDTO]
         (async () => {
             try {
-                const res = await fetch(`${API_BASE}/route-type`);
+                const res = await fetch(`${API_BASE}/route-type`, {
+                    headers: { 'City': 'montpellier' }
+                });
                 const data = await res.json();
                 elRouteType.innerHTML = '<option value="">-- Choose Type --</option>';
                 data.forEach(item => {
@@ -99,7 +101,9 @@
             });
 
             try {
-                const res = await fetch(`${API_BASE}/conveyance?${params.toString()}`);
+                const res = await fetch(`${API_BASE}/conveyance?${params.toString()}`, {
+                    headers: { 'City': 'montpellier' }
+                });
                 const data = await res.json(); 
                 
                 elConveyance.innerHTML = '<option value="">-- Choose Route --</option>';
@@ -129,7 +133,9 @@
             resetFields(['sourceStop', 'destStop', 'fetchUpdate']);
             if (!e.target.value) return;
 
-            const res = await fetch(`${API_BASE}/stop?route_id=${e.target.value}`);
+            const res = await fetch(`${API_BASE}/stop?route_id=${e.target.value}`, {
+                headers: { 'City': 'montpellier' }
+            });
             const data = await res.json(); // list[StopNameDTO]
             
             const options = '<option value="">-- Select Stop --</option>' + 
@@ -161,7 +167,9 @@
                     stop_name__destination: elDest.value
                 });
                 
-                const dirRes = await fetch(`${API_BASE}/direction?${params.toString()}`);
+                const dirRes = await fetch(`${API_BASE}/direction?${params.toString()}`, {
+                    headers: { 'City': 'montpellier' }
+                });
                 const dirData = await dirRes.json(); // Returns DirectionDTO
 
                 if (dirData.direction_id === null) {
@@ -170,7 +178,7 @@
                 }
 
                 // Use DirectionDTO fields to open WebSocket
-                const wsUrl = `ws://localhost:8000/stop-updates?route_id=${elConveyance.value}&direction_id=${dirData.direction_id}&stop_id__origin=${dirData.stop_id__origin}&stop_id__destination=${dirData.stop_id__destination}`;
+                const wsUrl = `ws://localhost:8000/stop-updates?city=montpellier&route_id=${elConveyance.value}&direction_id=${dirData.direction_id}&stop_id__origin=${dirData.stop_id__origin}&stop_id__destination=${dirData.stop_id__destination}`;
                 startWebSocket(wsUrl);
 
             } catch (err) {
@@ -224,7 +232,6 @@
                         <td class="py-3 px-4 text-center text-indigo-300 font-bold font-mono">${formatTime(trip.arrival_time)}</td>
                         <td class="py-3 px-4 text-center text-indigo-300 font-bold font-mono">${formatTime(trip.departure_time)}</td>
                         <td class="py-3 px-4 text-center ${delayClass} font-mono">${delayText}</td>
-                        <td class="py-3 px-4 text-right text-gray-500 text-xs font-mono">${trip.timestamp ? trip.timestamp.split(' ')[1] : '--'}</td>
                     </tr>
                 `;
             });

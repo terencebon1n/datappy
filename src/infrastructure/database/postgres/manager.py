@@ -1,8 +1,6 @@
 from sqlalchemy import URL, Engine, create_engine
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
     create_async_engine,
 )
 from sqlalchemy.orm import Session, sessionmaker
@@ -17,7 +15,6 @@ class PostgresDatabaseManager:
     _session: Session
 
     _async_engine: AsyncEngine
-    _async_session: AsyncSession
 
     def __init__(self, is_async: bool = False) -> None:
         self.is_async: bool = is_async
@@ -41,16 +38,23 @@ class PostgresDatabaseManager:
                 pool_timeout=settings.postgres.config.pool_timeout,
                 echo=False,
             )
-            self._async_session = async_sessionmaker(
-                self._async_engine,
-                expire_on_commit=False,
-            )()
         else:
             self._engine = create_engine(url=self.db_url)
             self._session = sessionmaker(
                 self._engine,
                 expire_on_commit=False,
             )()
+
+    def set_schema(self, schema: str) -> None:
+        if self.is_async:
+            self._async_engine = self._async_engine.execution_options(
+                schema_translate_map={"gtfs": schema}
+            )
+        else:
+            self._engine = self._engine.execution_options(
+                schema_translate_map={"gtfs": schema}
+            )
+            self._session = sessionmaker(self._engine, expire_on_commit=False)()
 
     @property
     def engine(self) -> Engine:
@@ -64,13 +68,8 @@ class PostgresDatabaseManager:
     def session(self) -> Session:
         return self._session
 
-    @property
-    def async_session(self) -> AsyncSession:
-        return self._async_session
-
     async def close(self) -> None:
         if self.is_async:
-            await self._async_session.close()
             await self._async_engine.dispose()
         else:
             self._session.close()

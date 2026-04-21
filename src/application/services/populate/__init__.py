@@ -11,11 +11,13 @@ class PopulateService:
     async def start(self, city: City) -> None:
         db_manager = PostgresDatabaseManager(is_async=False)
         db_manager.initialize()
+        db_manager.set_schema(city)
 
         GTFSModelBase.metadata.drop_all(db_manager.engine)
 
-        db_manager.session.execute(CreateSchema("gtfs", if_not_exists=True))
+        db_manager.session.execute(CreateSchema(name=city, if_not_exists=True))
         db_manager.session.commit()
+
         GTFSModelBase.metadata.create_all(db_manager.engine)
 
         gtfs_loader = GTFSLoaderService(db_manager.session)

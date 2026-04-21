@@ -24,6 +24,7 @@ class StopUpdateFeed:
         stop_updates: List[
             StopUpdate
         ] = await self.stop_update_repository.get_stop_updates(
+            city=transit.city,
             route_id=transit.route_id,
             direction_id=transit.direction_id,
             stop_id=transit.stop_id__origin,

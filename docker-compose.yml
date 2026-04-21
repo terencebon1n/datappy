@@ -20,7 +20,7 @@ services:
     image: apache/kafka:latest
     container_name: broker
     networks:
-      - spark-net
+      - realtime-net
     ports:
       - "9092:9092" 
     environment:
@@ -35,72 +35,6 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  spark-master:
-    build:
-      context: .
-      dockerfile: Dockerfile.spark
-    container_name: spark-master
-    hostname: spark-master
-    networks:
-      - spark-net
-    ports:
-      - "15002:15002"
-      - "8080:8080"
-      - "7077:7077"
-    volumes:
-      - ./src:/opt/spark/work-dir/src
-    environment:
-      - SPARK_LOCAL_IP=spark-master
-      - SPARK_MASTER_PORT=7077
-      - SPARK_MASTER_WEBUI_PORT=8080
-      # Force Spark to include the connect jars in the classpath
-      - SPARK_DIST_CLASSPATH=/opt/spark/jars/*
-      - SPARK_MASTER_OPTS=-Dspark.plugins=org.apache.spark.sql.connect.SparkConnectPlugin -Dspark.connect.grpc.binding.port=15002 -Dspark.connect.grpc.binding.address=0.0.0.0 -Djava.net.preferIPv4Stack=true
-      - PYTHONPATH=$PYTHONPATH:/opt/spark/work-dir
-      - SPARK_CONF_spark_sql_shuffle_partitions=4
-      - SPARK_CONF_spark_default_parallelism=4
-      - SPARK_CONF_spark_sql_session_timeZone=UTC
-    command: >
-      /bin/bash -c "
-      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host spark-master &
-      /opt/spark/sbin/start-connect-server.sh 
-      --master spark://spark-master:7077 
-      --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.0 
-      --conf spark.connect.grpc.binding.address=0.0.0.0 
-      --conf spark.connect.grpc.binding.port=15002;
-      tail -f /opt/spark/logs/*"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://spark-master:8080"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
-    env_file:
-      - .env
-
-  spark-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.spark
-    networks:
-      - spark-net
-    depends_on:
-      spark-master:
-        condition: service_healthy
-    volumes:
-        - ./src:/opt/spark/work-dir/src
-    environment:
-      - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_LOCAL_IP=spark-worker
-      - PYTHONPATH=$PYTHONPATH:/opt/spark/work-dir
-      - SPARK_CONF_spark_sql_shuffle_partitions=4
-      - SPARK_CONF_spark_default_parallelism=4
-    command: >
-      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-      spark://spark-master:7077
-    env_file:
-      - .env
-
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -108,7 +42,7 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - spark-net
+      - realtime-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -116,7 +50,7 @@ services:
       retries: 5
 
 networks:
-  spark-net:
+  realtime-net:
     driver: bridge
 
 volumes:

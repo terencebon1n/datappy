@@ -1,7 +1,7 @@
 import sys
 
 from src.application.services.api import ApiService
-from src.application.services.consumer import ConsumerService
+from src.application.services.consumer import QuixStreamsConsumerService
 from src.application.services.enums import ServiceCommand
 from src.application.services.populate import PopulateService
 from src.application.services.producer import ProducerService
@@ -13,7 +13,7 @@ def main() -> None:
     registry.register(ServiceCommand.API, lambda: ApiService())
     registry.register(ServiceCommand.POPULATE, lambda: PopulateService())
     registry.register(ServiceCommand.PRODUCER, lambda: ProducerService())
-    registry.register(ServiceCommand.CONSUMER, lambda: ConsumerService())
+    registry.register(ServiceCommand.CONSUMER, lambda: QuixStreamsConsumerService())
 
     registry.run(*sys.argv[1:])
 
