@@ -1,4 +1,5 @@
 import 'package:frontend/domain/direction.dart';
+import 'package:frontend/domain/path.dart';
 
 class PathDTO {
     final String routeId;
@@ -15,6 +16,12 @@ class PathDTO {
         routeId: json['route_id'],
         stopNameOrigin: json['stop_name__origin'],
         stopNameDestination: json['stop_name__destination'],
+    );
+
+    Path toDomain() => Path(
+        routeId: routeId,
+        stopNameOrigin: stopNameOrigin,
+        stopNameDestination: stopNameDestination,
     );
 
 }
