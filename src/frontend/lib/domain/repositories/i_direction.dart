@@ -1,9 +1,9 @@
-import 'package:frontend/domain/direction.dart';
+import 'package:frontend/domain/direction.dart' show Direction;
+import 'package:frontend/domain/path.dart' show Path;
+
 
 abstract class IDirectionRepository {
-  Future<Direction> resolveDirection({
-    required String routeId,
-    required String originName,
-    required String destinationName,
-  });
+    Future<Direction> resolveDirection(
+        Path path,
+    );
 }

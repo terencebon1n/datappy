@@ -62,25 +62,3 @@ class DirectionDTO {
         stopIdDestination: json['stop_id__destination'],
       );
 }
-
-// 5. StopUpdate (For the WebSocket Feed)
-class StopUpdate {
-  final String tripId;
-  final int? arrivalTime;
-  final int? departureTime;
-  final int arrivalDelay;
-
-  StopUpdate({
-    required this.tripId,
-    this.arrivalTime,
-    this.departureTime,
-    required this.arrivalDelay,
-  });
-
-  factory StopUpdate.fromJson(Map<String, dynamic> json) => StopUpdate(
-        tripId: json['trip_id'],
-        arrivalTime: json['arrival_time'],
-        departureTime: json['departure_time'],
-        arrivalDelay: json['arrival_delay'] ?? 0,
-      );
-}

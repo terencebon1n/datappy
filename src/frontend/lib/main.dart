@@ -1,9 +1,23 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:web_socket_channel/web_socket_channel.dart';
+
 import 'models.dart';
+
+import 'package:frontend/domain/conveyance.dart' show Conveyance;
+import 'package:frontend/domain/direction.dart' show Direction;
+import 'package:frontend/domain/path.dart' show Path;
+import 'package:frontend/domain/route_type.dart' show RouteType;
+import 'package:frontend/domain/stop_update.dart' show StopUpdate;
+import 'package:frontend/domain/transit_path.dart' show TransitPath;
+import 'package:frontend/infrastructure/backend/repositories/conveyance.dart' show ConveyanceRepository;
+import 'package:frontend/infrastructure/backend/repositories/direction.dart' show DirectionRepository;
+import 'package:frontend/infrastructure/backend/repositories/route_type.dart' show RouteTypeRepository;
+import 'package:frontend/infrastructure/backend/repositories/stop_name.dart' show StopNameRepository;
+import 'package:frontend/infrastructure/backend/repositories/stop_update.dart' show StopUpdateRepository;
+
 
 void main() {
   runApp(const MaterialApp(
@@ -22,115 +36,90 @@ class TransitDashboard extends StatefulWidget {
 class _TransitDashboardState extends State<TransitDashboard> {
   // Configuration
   final String apiBase = "http://localhost:8000";
+  final String wsBase = "ws://localhost:8000";
   final Map<String, String> headers = {'City': 'montpellier'};
 
   // State Data
-  List<RouteTypeDTO> routeTypes = [];
-  List<ConveyanceDTO> conveyances = [];
+  List<RouteType> routeTypes = [];
+  List<Conveyance> conveyances = [];
   List<String> stops = [];
   List<StopUpdate> updates = [];
 
   // Selections
-  RouteTypeDTO? selectedType;
-  ConveyanceDTO? selectedConveyance;
+  RouteType? selectedType;
+  Conveyance? selectedConveyance;
   String? sourceStop;
   String? destStop;
 
+  ConveyanceRepository? conveyanceRepository;
+  RouteTypeRepository? routeTypeRepository;
+  DirectionRepository? directionRepository;
+  StopNameRepository? stopNameRepository;
+  StopUpdateRepository? stopUpdateRepository;
+
   // Stream/Socket
-  WebSocketChannel? _channel;
+  StreamSubscription<List<StopUpdate>>? _channel;
   bool isConnecting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchRouteTypes();
-  }
+    @override
+    void initState() {
+        super.initState();
+        conveyanceRepository = ConveyanceRepository(apiBase: apiBase, headers: headers);
+        directionRepository = DirectionRepository(apiBase: apiBase, headers: headers);
+        routeTypeRepository = RouteTypeRepository(apiBase: apiBase, headers: headers);
+        stopNameRepository = StopNameRepository(apiBase: apiBase, headers: headers);
+        stopUpdateRepository = StopUpdateRepository(wsBase: wsBase);
+        routeTypeRepository!.resolveRouteTypes().then((rt) => setState(() => routeTypes = rt));
+    }
 
   // --- API Methods ---
-
-  Future<void> _fetchRouteTypes() async {
-    try {
-      final res = await http.get(Uri.parse('$apiBase/route-type'), headers: headers);
-      final List data = jsonDecode(res.body);
-      setState(() {
-        routeTypes = data.map((e) => RouteTypeDTO.fromJson(e)).toList();
-      });
-    } catch (e) {
-      debugPrint("Error fetching types: $e");
-    }
-  }
-
-  Future<void> _fetchConveyances(RouteTypeDTO type) async {
-    try {
-      final uri = Uri.parse('$apiBase/conveyance').replace(queryParameters: {
-        'id': type.id.toString(),
-        'name': type.name,
-      });
-      final res = await http.get(uri, headers: headers);
-      final List data = jsonDecode(res.body);
-      setState(() {
-        conveyances = data.map((e) => ConveyanceDTO.fromJson(e)).toList();
-      });
-    } catch (e) {
-      debugPrint("Error fetching conveyances: $e");
-    }
-  }
-
-  Future<void> _fetchStops(String routeId) async {
-    try {
-      final uri = Uri.parse('$apiBase/stop').replace(queryParameters: {'route_id': routeId});
-      final res = await http.get(uri, headers: headers);
-      final List data = jsonDecode(res.body);
-      setState(() {
-        stops = data.map((e) => StopNameDTO.fromJson(e).name).toList();
-      });
-    } catch (e) {
-      debugPrint("Error fetching stops: $e");
-    }
-  }
-
   void _startStreaming() async {
     setState(() {
       isConnecting = true;
       updates = [];
     });
     
-    if (_channel != null) _channel!.sink.close();
+    if (_channel != null) _channel!.cancel();
 
     try {
-      // 1. Resolve Direction (PathDTO -> DirectionDTO)
-      final dirUri = Uri.parse('$apiBase/direction').replace(queryParameters: {
-        'route_id': selectedConveyance!.id,
-        'stop_name__origin': sourceStop!,
-        'stop_name__destination': destStop!,
-      });
-      
-      final res = await http.get(dirUri, headers: headers);
-      final dirData = DirectionDTO.fromJson(jsonDecode(res.body));
+      final dirRepo = DirectionRepository(
+        apiBase: apiBase,
+        headers: headers,
+      );
 
-      // 2. Open WebSocket
-      final wsUrl = "ws://localhost:8000/stop-updates?city=montpellier"
-          "&route_id=${selectedConveyance!.id}"
-          "&direction_id=${dirData.directionId}"
-          "&stop_id__origin=${dirData.stopIdOrigin}"
-          "&stop_id__destination=${dirData.stopIdDestination}";
+      final path = Path(
+        routeId: selectedConveyance!.id,
+        stopNameOrigin: sourceStop!,
+        stopNameDestination: destStop!,
+      );
 
-      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      final Direction dirData = await dirRepo.resolveDirection(path);
 
-      _channel!.stream.listen((data) {
-        final List decoded = jsonDecode(data);
+      final stopUpdateRepo = StopUpdateRepository(wsBase: wsBase);
+
+      final transitPath = TransitPath(
+        city: "montpellier",
+        routeId: selectedConveyance!.id,
+        direction: dirData,
+      );
+
+
+      _channel = stopUpdateRepo.watchStopUpdates(transitPath).listen((updates) {
         setState(() {
-          updates = decoded.map((e) => StopUpdate.fromJson(e)).toList();
+          this.updates = updates;
           isConnecting = false;
         });
       }, onError: (err) {
         setState(() => isConnecting = false);
+        debugPrint(updates.toString());
+        debugPrint("Stream Error: $err");
       });
     } catch (e) {
       setState(() => isConnecting = false);
       debugPrint("Stream Error: $e");
     }
   }
+
 
   // --- Helper for Time Formatting ---
   String _formatTimestamp(int? ts) {
@@ -141,7 +130,7 @@ class _TransitDashboardState extends State<TransitDashboard> {
 
   @override
   void dispose() {
-    _channel?.sink.close();
+    _channel?.cancel();
     super.dispose();
   }
 
@@ -161,7 +150,7 @@ class _TransitDashboardState extends State<TransitDashboard> {
           children: [
             // 1. Transport Type
             _buildLabel("1. Transport Type"),
-            DropdownButtonFormField<RouteTypeDTO>(
+            DropdownButtonFormField<RouteType>(
               value: selectedType,
               items: routeTypes.map((t) => DropdownMenuItem(value: t, child: Text(t.name))).toList(),
               onChanged: (val) {
@@ -170,7 +159,10 @@ class _TransitDashboardState extends State<TransitDashboard> {
                   selectedConveyance = null;
                   conveyances = [];
                 });
-                if (val != null) _fetchConveyances(val);
+                if (val != null) {
+                    conveyanceRepository!.resolveConveyances(val)
+                    .then((c) => setState(() => conveyances = c));
+                }
               },
               decoration: const InputDecoration(filled: true, fillColor: Colors.white, border: OutlineInputBorder()),
             ),
@@ -178,10 +170,10 @@ class _TransitDashboardState extends State<TransitDashboard> {
 
             // 2. Conveyance
             _buildLabel("2. Route (Conveyance)"),
-            DropdownButtonFormField<ConveyanceDTO>(
+            DropdownButtonFormField<Conveyance>(
               value: selectedConveyance,
               disabledHint: const Text("Select type first"),
-              items: conveyances.map((c) => DropdownMenuItem(value: c, child: Text(c.displayName))).toList(),
+              items: conveyances.map((c) => DropdownMenuItem(value: c, child: Text(c.longName))).toList(),
               onChanged: selectedType == null ? null : (val) {
                 setState(() {
                   selectedConveyance = val;
@@ -189,7 +181,10 @@ class _TransitDashboardState extends State<TransitDashboard> {
                   destStop = null;
                   stops = [];
                 });
-                if (val != null) _fetchStops(val.id);
+                if (val != null) {
+                    stopNameRepository!.resolveStopNames(val.id)
+                    .then((s) => setState(() => stops = s));
+                }
               },
               decoration: const InputDecoration(filled: true, fillColor: Colors.white, border: OutlineInputBorder()),
             ),
