@@ -7,6 +7,10 @@ L'objectif principal est de développer une application mobile offrant :
 
 * **Affichage de Panneaux Numériques :** Visualisation des prochains départs pour un arrêt donné, à la manière des panneaux d'affichage physiques.
 
+## ⚙️ Architecture Technique 
+
+![Datappy Architecture](./datappy.png)
+
 ## ⚙️ Stack Technique
 
 Bien que le produit final soit une application mobile, le cœur de la gestion et du traitement des données GTFS-RT reste un **backend performant** pour alimenter l'application.
@@ -17,12 +21,12 @@ Bien que le produit final soit une application mobile, le cœur de la gestion et
 | **Backend API** | **FastAPI** (Python) | Serveur ultra-rapide traduisant les demandes et servant les données en temps réel à l'application mobile. |
 | **Database** | **Postgres** (SQLAlchemy) | Base de données de stockage des données statiques GTFS. |
 | **Data Broker** | **Kafka** (aiokafka) | Distribution des données GTFS-RT aux différents services. |
-| **Data Consumer** | **Spark** (PySpark) | Traitement des données en temps réel et production des panneaux numériques. |
+| **Data Consumer** | **QuixStreams** | Traitement des données en temps réel. |
 | **Data Sink** | **Redis** | BDD No-SQL Ultra performant, idéal pour les websockets. |
 | **Gestionnaire de Paquets** | **`uv` (par astral-sh)** | Gestionnaire de dépendances et installateur de paquets ultra-rapide. |
 | **Linter & Formateur** | **Ruff** | Outil unifié et performant pour l'analyse statique et le formatage du code Python. |
 | **Source de Données** | **GTFS-RT** | Standard pour les données de transport en temps réel. https://transport.data.gouv.fr|
-| **Frontend** | (À déterminer : Flutter, React Native, ou Natif) | L'application mobile elle-même qui consommera l'API Datappy. |
+| **Frontend** | **Flutter** | L'application mobile elle-même qui consomme l'API Datappy. |
 
 ## 🚀 Démarrage du Backend Datappy
 
@@ -57,7 +61,7 @@ uv run datappy populate montpellier
 ```bash
 uv run datappy api
 uv run datappy producer montpellier
-uv run datappy consumer
+uv run datappy consumer montpellier
 ```
 
 ### 6. Lancer le front
