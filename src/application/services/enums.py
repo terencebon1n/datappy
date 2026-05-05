@@ -6,3 +6,4 @@ class ServiceCommand(StrEnum):
     CONSUMER = "consumer"
     PRODUCER = "producer"
     POPULATE = "populate"
+    DIAGRAM = "diagram"
