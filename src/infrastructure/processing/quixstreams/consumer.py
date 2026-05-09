@@ -3,13 +3,15 @@ from quixstreams.dataframe import StreamingDataFrame
 from quixstreams.models import Topic
 from quixstreams.sinks.community.redis import RedisSink
 
+from src.infrastructure.config import settings
+
 
 class QuixStreamsConsumerAdapter:
     def __init__(self) -> None:
-        self.app = Application(broker_address="localhost:9092")
+        self.app = Application(broker_address=settings.kafka.brokers)
         self.redis_sink = RedisSink(
-            host="localhost",
-            port=6379,
+            host=settings.redis.host,
+            port=settings.redis.port,
             db=0,
         )
 

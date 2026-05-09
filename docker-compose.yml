@@ -1,8 +1,22 @@
 version: "3"
 
 services:
+  datappy:
+    build: .
+    container_name: datappy
+    depends_on:
+      - postgres
+      - kafka-broker
+      - redis
+    ports:
+      - "8000:8000"
+    networks:
+      - realtime-net
+      - schedule-net
+
   postgres:
     image: postgres:17
+    container_name: postgres
     restart: always
     environment:
       POSTGRES_PASSWORD: postgres
@@ -15,6 +29,8 @@ services:
       - 5432:5432
     volumes:
       - pgdata:/var/lib/postgresql/datappy-data
+    networks:
+      - schedule-net
 
   kafka-broker:
     image: apache/kafka:latest
@@ -26,9 +42,9 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: EXTERNAL://0.0.0.0:9092,INTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENERS: EXTERNAL://broker:9092,INTERNAL://broker:29092,CONTROLLER://broker:9093
       # FIX: Use 'broker' for internal quorum and advertised listeners
-      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://localhost:9092,INTERNAL://broker:29092
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://broker:9092,INTERNAL://broker:29092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:9093
@@ -51,6 +67,8 @@ services:
 
 networks:
   realtime-net:
+    driver: bridge
+  schedule-net:
     driver: bridge
 
 volumes:
