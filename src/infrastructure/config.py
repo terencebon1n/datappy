@@ -26,6 +26,11 @@ class PostgresModel(BaseModel):
     config: PostgresConfigModel
 
 
+class RedisModel(BaseModel):
+    host: str
+    port: int = 6379
+
+
 class KafkaModel(BaseModel):
     brokers: str
 
@@ -33,6 +38,7 @@ class KafkaModel(BaseModel):
 class Settings(BaseSettings):
     postgres: PostgresModel
     kafka: KafkaModel
+    redis: RedisModel
 
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",

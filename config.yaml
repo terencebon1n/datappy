@@ -4,7 +4,3 @@ kafka:
   max_offsets_per_trigger: 1000
   security:
     protocol: "SSL"
-
-spark:
-  remote_url: "sc://localhost:15002"
-
