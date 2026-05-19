@@ -2,7 +2,7 @@ import 'dart:convert' show jsonDecode;
 
 import 'package:http/http.dart' as http;
 
-import 'package:frontend/application/dto/trip.dart' show DirectionDTO;
+import 'package:frontend/infrastructure/backend/models/response/direction.dart' show DirectionResponse;
 import 'package:frontend/domain/direction.dart' show Direction;
 import 'package:frontend/domain/path.dart' show Path;
 import 'package:frontend/domain/repositories/i_direction.dart' show IDirectionRepository;
@@ -32,8 +32,8 @@ class DirectionRepository implements IDirectionRepository {
     if (response.statusCode == 200) {
 
       final Map<String, dynamic> jsonData = jsonDecode(response.body);
-      final dto = DirectionDTO.fromJson(jsonData);
-      return dto.toDomain();
+      final direction = DirectionResponse.fromJson(jsonData);
+      return direction.toDomain();
 
     } else {
       throw Exception("Failed to resolve transit direction: ${response.statusCode}");
