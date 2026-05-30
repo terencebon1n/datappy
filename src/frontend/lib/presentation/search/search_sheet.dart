@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:frontend/domain/city.dart';
 import 'package:frontend/domain/conveyance.dart';
 import 'package:frontend/domain/route_type.dart';
 import 'package:frontend/domain/transit_path.dart';
@@ -52,6 +53,20 @@ class SearchSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
+
+          const SheetLabel('Ville'),
+          const SizedBox(height: 6),
+          SheetDropdown<City>(
+            hint: 'Ville',
+            value: sel.selectedCity,
+            items: sel.cities,
+            label: (c) => c.name,
+            onChanged: (c) {
+              context.read<RouteSelectionCubit>().selectCity(c);
+              context.read<StopUpdateCubit>().stop();
+            },
+          ),
+          const SizedBox(height: 14),
 
           const SheetLabel('Type de transport'),
           const SizedBox(height: 6),
@@ -133,7 +148,7 @@ class SearchSheet extends StatelessWidget {
                   ? () {
                       context.read<StopUpdateCubit>().watchStopUpdates(
                         TransitPath(
-                          city: 'montpellier',
+                          city: sel.selectedCity!.name.toLowerCase(),
                           routeId: sel.selectedConveyance!.id,
                           direction: sel.direction!,
                         ),

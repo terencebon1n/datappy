@@ -7,11 +7,13 @@ import 'package:frontend/domain/repositories/i_stop_name.dart' show IStopNameRep
 
 class StopNameRepository implements IStopNameRepository {
     final String apiBase;
-    final Map<String, String> headers;
+
+    @override
+    Map<String, String> headers;
 
     StopNameRepository({
         required this.apiBase,
-        required this.headers,
+        this.headers = const {}
     });
 
     @override

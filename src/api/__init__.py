@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.dependencies import async_db_manager
-from src.api.v1.endpoints.transit import gtfs_router, gtfs_rt_router
+from src.api.v1.endpoints.transit import basic_router, gtfs_router, gtfs_rt_router
 
 
 @asynccontextmanager
@@ -33,5 +33,6 @@ app.add_middleware(
     allow_headers=["*"],  # Autorise tous les headers
 )
 
+app.include_router(basic_router)
 app.include_router(gtfs_router)
 app.include_router(gtfs_rt_router)
