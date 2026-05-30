@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:frontend/infrastructure/backend/repositories/city.dart' show CityRepository;
 import 'package:frontend/infrastructure/backend/repositories/conveyance.dart' show ConveyanceRepository;
 import 'package:frontend/infrastructure/backend/repositories/direction.dart' show DirectionRepository;
 import 'package:frontend/infrastructure/backend/repositories/route_type.dart' show RouteTypeRepository;
@@ -19,21 +20,20 @@ void main() {
         MultiBlocProvider(
             providers: [
                 BlocProvider(create: (context) => RouteSelectionCubit(
+                    cityRepo: CityRepository(
+                        apiBase: DatappyConfig.apiBase
+                    ),
                     routeTypeRepo: RouteTypeRepository(
-                        apiBase: DatappyConfig.apiBase,
-                        headers: {'City': 'montpellier'}
+                        apiBase: DatappyConfig.apiBase
                     ),
                     conveyanceRepo: ConveyanceRepository(
-                        apiBase: DatappyConfig.apiBase,
-                        headers: {'City': 'montpellier'}
+                        apiBase: DatappyConfig.apiBase
                     ),
                     stopRepo: StopNameRepository(
-                        apiBase: DatappyConfig.apiBase,
-                        headers: {'City': 'montpellier'}
+                        apiBase: DatappyConfig.apiBase
                     ),
                     directionRepo: DirectionRepository(
-                        apiBase: DatappyConfig.apiBase,
-                        headers: {'City': 'montpellier'}
+                        apiBase: DatappyConfig.apiBase
                     )
                 )),
                 BlocProvider(create: (context) => StopUpdateCubit(

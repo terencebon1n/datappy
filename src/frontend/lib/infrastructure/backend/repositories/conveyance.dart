@@ -10,11 +10,13 @@ import 'package:frontend/infrastructure/backend/models/response/conveyance.dart'
 
 class ConveyanceRepository implements IConveyanceRepository {
     final String apiBase;
-    final Map<String, String> headers;
+
+    @override
+    Map<String, String> headers;
 
     ConveyanceRepository({
         required this.apiBase,
-        required this.headers,
+        this.headers = const {}
     });
 
     @override

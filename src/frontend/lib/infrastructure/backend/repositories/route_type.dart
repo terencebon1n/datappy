@@ -9,12 +9,15 @@ import 'package:frontend/infrastructure/backend/models/response/route_type.dart'
 
 class RouteTypeRepository implements IRouteTypeRepository {
     final String apiBase;
-    final Map<String, String> headers;
+
+    @override
+    Map<String, String> headers;
 
     RouteTypeRepository({
         required this.apiBase,
-        required this.headers,
+        this.headers = const {}
     });
+
 
     @override
     Future<List<RouteType>> resolveRouteTypes() async {

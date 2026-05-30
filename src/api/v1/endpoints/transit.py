@@ -17,9 +17,15 @@ from src.application.services.api.route_loader import RouteLoaderService
 from src.application.services.api.stop_loader import StopLoaderService
 from src.application.services.api.stop_update_feed import StopUpdateFeed
 from src.application.services.api.trip_loader import TripLoaderService
+from src.domain.gtfs_rt.enums import City
 from src.domain.gtfs_rt.stop_update import StopUpdate
 
-from ..router import gtfs_router, gtfs_rt_router
+from ..router import basic_router, gtfs_router, gtfs_rt_router
+
+
+@basic_router.get("/city")
+async def get_cities() -> list[City]:
+    return list(City)
 
 
 @gtfs_router.get("/route-type", response_model=list[RouteTypeDTO])

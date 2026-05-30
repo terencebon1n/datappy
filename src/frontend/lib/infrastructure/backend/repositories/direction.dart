@@ -11,11 +11,13 @@ import 'package:frontend/domain/repositories/i_direction.dart' show IDirectionRe
 
 class DirectionRepository implements IDirectionRepository {
   final String apiBase;
-  final Map<String, String> headers;
+
+  @override
+  Map<String, String> headers;
 
   DirectionRepository({
-    required this.apiBase, 
-    required this.headers,
+    required this.apiBase,
+    this.headers = const {},
   });
 
   @override
