@@ -22,6 +22,7 @@ class LineCard extends StatelessWidget {
     final lineLabel = sel.selectedConveyance?.shortName
                     ?? sel.selectedConveyance?.id
                     ?? '—';
+    final lineColor = sel.selectedConveyance?.color;
     final dest = sel.destStop ?? 'Destination non sélectionnée';
     final via  = sel.selectedConveyance?.longName ?? '';
 
@@ -37,7 +38,7 @@ class LineCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              _LineBadge(label: lineLabel),
+              _LineBadge(label: lineLabel, color: lineColor ?? TransitColors.accentBorder),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -81,17 +82,22 @@ class LineCard extends StatelessWidget {
 }
 
 class _LineBadge extends StatelessWidget {
-  const _LineBadge({required this.label});
+  const _LineBadge({
+    required this.label,
+    required this.color,
+  });
+
   final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 38, height: 38,
       decoration: BoxDecoration(
-        color: TransitColors.accentBg,
+        color: Color.lerp(color, Colors.black, 0.5),
         borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: TransitColors.accentBorder, width: 1.5),
+        border: Border.all(color: color, width: 1.5),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -99,7 +105,7 @@ class _LineBadge extends StatelessWidget {
         style: GoogleFonts.syne(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: TransitColors.accent,
+          color: Color.lerp(color, Colors.white, 0.5),
         ),
       ),
     );

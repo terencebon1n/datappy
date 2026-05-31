@@ -28,6 +28,7 @@ class RouteRepository(BaseRepository[Route, RouteModel]):
             self.model.id,
             self.model.short_name,
             self.model.long_name,
+            self.model.color,
         ).where(self.model.type == route_type)
 
         result = await self.execute_select(query)
