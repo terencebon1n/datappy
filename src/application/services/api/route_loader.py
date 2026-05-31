@@ -32,6 +32,7 @@ class RouteLoaderService:
                 id=rconveyance.id,
                 short_name=rconveyance.short_name,
                 long_name=rconveyance.long_name,
+                color=rconveyance.color,
             )
             for rconveyance in rconveyances
         ]
