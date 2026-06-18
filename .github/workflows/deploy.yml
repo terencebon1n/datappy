@@ -1,0 +1,32 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    timeout-minutes: 10
+
+    steps:
+      - name: Pull latest code
+        run: |
+          cd ~/datappy
+          git pull origin main
+
+      - name: Rebuild and restart containers
+        run: |
+          cd ~/datappy
+          docker compose pull
+          docker compose up -d --build --remove-orphans
+          docker image prune -f
+
+      - name: Health check
+        run: |
+          cd ~/datappy
+          echo "--- Running containers ---"
+          docker compose ps
