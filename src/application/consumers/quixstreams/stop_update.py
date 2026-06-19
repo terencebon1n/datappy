@@ -4,6 +4,7 @@ from types import TracebackType
 from typing import Optional, Type
 
 from quixstreams.dataframe import StreamingDataFrame
+from quixstreams.sinks import BaseSink
 
 from src.domain.gtfs_rt.enums import City
 from src.infrastructure.processing.quixstreams.consumer import (
@@ -12,9 +13,15 @@ from src.infrastructure.processing.quixstreams.consumer import (
 
 
 class QuixStreamsStopUpdateStream:
-    def __init__(self, quix_adapter: QuixStreamsConsumerAdapter, city: City) -> None:
+    def __init__(
+        self,
+        quix_adapter: QuixStreamsConsumerAdapter,
+        city: City,
+        sink: BaseSink,
+    ) -> None:
         self.quix_adapter = quix_adapter
         self.city = city
+        self._sink = sink
 
     def _process_dataframe(self) -> StreamingDataFrame:
         sdf = self.quix_adapter.stream("TripUpdate")
@@ -57,7 +64,7 @@ class QuixStreamsStopUpdateStream:
             ]
         ]
 
-        self.quix_adapter.sink(sdf)
+        sdf.sink(self._sink)
 
         return sdf
 
