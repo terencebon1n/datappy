@@ -35,10 +35,27 @@ class KafkaModel(BaseModel):
     brokers: str
 
 
+class GoogleOAuthModel(BaseModel):
+    client_id: str
+    client_secret: str
+    redirect_uri: str
+
+
+class AdminModel(BaseModel):
+    allowed_email: str
+    session_secret_key: str
+    docker_image: str
+    docker_network: str
+    docker_host: str = "unix:///var/run/docker.sock"
+    frontend_url: str = "http://localhost:8001"
+    google: GoogleOAuthModel
+
+
 class Settings(BaseSettings):
     postgres: PostgresModel
     kafka: KafkaModel
     redis: RedisModel
+    admin: AdminModel
 
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",

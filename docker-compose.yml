@@ -10,6 +10,8 @@ services:
       - redis
     ports:
       - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - realtime-net
       - schedule-net
@@ -65,11 +67,20 @@ services:
       timeout: 3s
       retries: 5
 
+  admin-frontend:
+    build:
+      context: .
+      dockerfile: docker/admin-frontend/Dockerfile
+    container_name: datappy_admin_frontend
+    ports:
+      - "8001:80"
+
 networks:
   realtime-net:
     driver: bridge
   schedule-net:
     driver: bridge
+
 
 volumes:
   pgdata:
