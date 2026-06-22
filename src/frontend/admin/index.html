@@ -68,7 +68,7 @@
         </table>
     </main>
     <script>
-        const API = `${window.location.protocol}//${window.location.hostname}:8000`;
+        const API = `${window.location.protocol}//api.datappy.fr`;
 
         async function fetchStatus() {
             const res = await fetch(`${API}/admin/status`, { credentials: 'include' });
