@@ -1,11 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/domain/city.dart';
 import 'package:frontend/domain/conveyance.dart';
-import 'package:frontend/domain/route_type.dart';
 import 'package:frontend/domain/repositories/i_city.dart';
 import 'package:frontend/domain/repositories/i_conveyance.dart';
 import 'package:frontend/domain/repositories/i_direction.dart';
-import 'package:frontend/domain/repositories/i_route_type.dart';
 import 'package:frontend/domain/repositories/i_stop_name.dart';
 import 'package:frontend/domain/path.dart';
 import 'state.dart';
@@ -13,19 +11,16 @@ import 'state.dart';
 
 class RouteSelectionCubit extends Cubit<RouteSelectionState> {
   final ICityRepository _cityRepo;
-  final IRouteTypeRepository _routeTypeRepo;
   final IConveyanceRepository _conveyanceRepo;
   final IStopNameRepository _stopRepo;
   final IDirectionRepository _directionRepo;
 
   RouteSelectionCubit({
     required ICityRepository cityRepo,
-    required IRouteTypeRepository routeTypeRepo,
     required IConveyanceRepository conveyanceRepo,
     required IStopNameRepository stopRepo,
     required IDirectionRepository directionRepo,
   })  : _cityRepo = cityRepo,
-        _routeTypeRepo = routeTypeRepo,
         _conveyanceRepo = conveyanceRepo,
         _stopRepo = stopRepo,
         _directionRepo = directionRepo,
@@ -38,61 +33,82 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
       emit(state.copyWith(cities: cities));
   }
 
+  /// Restart a fresh search at the city step, keeping the loaded city list.
+  void reset() {
+    emit(RouteSelectionState(
+      status: state.status,
+      cities: state.cities,
+    ));
+  }
+
+  /// Go back one step, preserving already-loaded data.
+  /// Returns false when already at the first step (caller should pop the route).
+  bool back() {
+    final prev = switch (state.step) {
+      FunnelStep.city => null,
+      FunnelStep.line => FunnelStep.city,
+      FunnelStep.source => FunnelStep.line,
+      FunnelStep.dest => FunnelStep.source,
+    };
+    if (prev == null) return false;
+    emit(state.copyWith(step: prev));
+    return true;
+  }
+
   Future<void> selectCity(City city) async {
-    emit(state.copyWith(
+    emit(RouteSelectionState(
+      status: state.status,
+      step: FunnelStep.line,
+      cities: state.cities,
       selectedCity: city,
-      selectedType: null,
-      selectedConveyance: null,
-      routeTypes: [],
-      conveyances: [],
-      stops: [],
-      sourceStop: null,
-      destStop: null,
-      direction: null,
     ));
     final headers = {'City': city.name.toLowerCase()};
-    _routeTypeRepo.headers = headers;
     _conveyanceRepo.headers = headers;
     _stopRepo.headers = headers;
     _directionRepo.headers = headers;
-    final routeTypes = await _routeTypeRepo.resolveRouteTypes();
-    emit(state.copyWith(routeTypes: routeTypes));
-  }
-
-  Future<void> selectRouteType(RouteType type) async {
-    emit(state.copyWith(
-      selectedType: type,
-      selectedConveyance: null,
-      conveyances: [],
-      stops: [],
-      sourceStop: null,
-      destStop: null,
-      direction: null,
-    ));
-    final conveyances = await _conveyanceRepo.resolveConveyances(type);
+    final conveyances = await _conveyanceRepo.resolveConveyances();
     emit(state.copyWith(conveyances: conveyances));
   }
 
   Future<void> selectConveyance(Conveyance conveyance) async {
-    emit(state.copyWith(
+    emit(RouteSelectionState(
+      status: state.status,
+      step: FunnelStep.source,
+      cities: state.cities,
+      conveyances: state.conveyances,
+      selectedCity: state.selectedCity,
       selectedConveyance: conveyance,
-      stops: [],
-      sourceStop: null,
-      destStop: null,
-      direction: null,
     ));
     final stops = await _stopRepo.resolveStopNames(conveyance.id);
     emit(state.copyWith(stops: stops));
   }
 
   void selectSourceStop(String stop) {
-      emit(state.copyWith(sourceStop: stop));
-      _checkAndResolveDirection();
+    emit(RouteSelectionState(
+      status: state.status,
+      step: FunnelStep.dest,
+      cities: state.cities,
+      conveyances: state.conveyances,
+      stops: state.stops,
+      selectedCity: state.selectedCity,
+      selectedConveyance: state.selectedConveyance,
+      sourceStop: stop,
+    ));
   }
 
   void selectDestStop(String stop) {
-      emit(state.copyWith(destStop: stop));
-      _checkAndResolveDirection();
+    emit(RouteSelectionState(
+      status: state.status,
+      step: FunnelStep.dest,
+      cities: state.cities,
+      conveyances: state.conveyances,
+      stops: state.stops,
+      selectedCity: state.selectedCity,
+      selectedConveyance: state.selectedConveyance,
+      sourceStop: state.sourceStop,
+      destStop: stop,
+    ));
+    _checkAndResolveDirection();
   }
 
   Future<void> _checkAndResolveDirection() async {
@@ -100,7 +116,7 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
         state.sourceStop != null &&
         state.destStop != null &&
         state.sourceStop != state.destStop) {
-      
+
       try {
         final directionData = await _directionRepo.resolveDirection(
           Path(
@@ -111,8 +127,18 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
         );
         emit(state.copyWith(direction: directionData));
       } catch (e) {
-        // Handle lookup failure gracefully depending on your error architecture
-        emit(state.copyWith(direction: null)); 
+        // Resolution failed: clear the destination so the "resolving" overlay
+        // disappears and the user can pick another arrival stop.
+        emit(RouteSelectionState(
+          status: state.status,
+          step: FunnelStep.dest,
+          cities: state.cities,
+          conveyances: state.conveyances,
+          stops: state.stops,
+          selectedCity: state.selectedCity,
+          selectedConveyance: state.selectedConveyance,
+          sourceStop: state.sourceStop,
+        ));
       }
     }
   }

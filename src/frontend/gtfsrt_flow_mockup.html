@@ -1,0 +1,271 @@
+
+<style>
+  .phone { width:300px; background:var(--color-background-primary); border-radius:34px; border:1.5px solid var(--color-border-secondary); overflow:hidden; font-family:var(--font-sans); flex-shrink:0; }
+  .slabel { font-size:10px; color:var(--color-text-secondary); font-weight:500; text-align:center; margin:0 0 6px; letter-spacing:0.4px; }
+  .sbar { background:#1B3F72; padding:9px 18px 6px; display:flex; justify-content:space-between; align-items:center; }
+  .sbar span { color:#fff; font-size:11px; font-weight:500; }
+  .hdr { background:#1B3F72; padding:12px 16px 14px; }
+  .sep { border-top:0.5px solid var(--color-border-tertiary); }
+  .row { display:flex; align-items:center; gap:10px; padding:10px 16px; }
+  .chip-tram { background:#E6F1FB; color:#0C447C; font-size:12px; font-weight:500; padding:4px 10px; border-radius:20px; display:inline-flex; align-items:center; gap:4px; }
+  .chip-bus  { background:#EEEDFE; color:#3C3489; font-size:12px; font-weight:500; padding:4px 10px; border-radius:20px; display:inline-flex; align-items:center; gap:4px; }
+  .chip-active { outline:2px solid #185FA5; outline-offset:1px; }
+  .step-dot { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; flex-shrink:0; }
+  .step-done { background:#EAF3DE; color:#27500A; }
+  .step-curr { background:#1B3F72; color:#fff; }
+  .step-todo { background:var(--color-background-secondary); color:var(--color-text-secondary); }
+  .navbtn { flex:1; border:none; background:transparent; padding:10px 0; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; }
+  .badge-soon { background:#EAF3DE; color:#27500A; font-size:11px; font-weight:500; padding:3px 9px; border-radius:20px; }
+  .badge-med  { background:#FAEEDA; color:#633806; font-size:11px; font-weight:500; padding:3px 9px; border-radius:20px; }
+  .badge-late { background:var(--color-background-secondary); color:var(--color-text-secondary); font-size:11px; font-weight:500; padding:3px 9px; border-radius:20px; }
+  .stat-c { background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:9px 12px; flex:1; }
+  .homeind { background:var(--color-background-primary); display:flex; justify-content:center; padding:6px 0 10px; }
+</style>
+
+<div style="display:flex;justify-content:center;padding:1.5rem 0.75rem;background:var(--color-background-secondary);border-radius:var(--border-radius-lg);gap:10px;flex-wrap:wrap;align-items:flex-start;">
+
+  <!-- ÉCRAN 1 — Choix de la ligne -->
+  <div>
+    <p class="slabel">① Choix de la ligne</p>
+    <div class="phone">
+      <div class="sbar"><span>9:41</span><div style="display:flex;gap:4px;"><i class="ti ti-wifi" style="color:#fff;font-size:12px;" aria-hidden="true"></i><i class="ti ti-battery" style="color:#fff;font-size:12px;" aria-hidden="true"></i></div></div>
+      <div class="hdr">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <p style="color:rgba(255,255,255,0.6);font-size:10px;margin:0 0 2px;letter-spacing:0.4px;">Nouvelle recherche</p>
+            <p style="color:#fff;font-size:15px;font-weight:500;margin:0;">Quelle ligne ?</p>
+          </div>
+          <button style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;" aria-label="Fermer"><i class="ti ti-x" style="color:#fff;font-size:15px;" aria-hidden="true"></i></button>
+        </div>
+        <!-- stepper -->
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="step-dot step-curr">1</div>
+          <div style="flex:1;height:1.5px;background:rgba(255,255,255,0.2);"></div>
+          <div class="step-dot step-todo">2</div>
+          <div style="flex:1;height:1.5px;background:rgba(255,255,255,0.2);"></div>
+          <div class="step-dot step-todo">3</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          <span style="font-size:9px;color:rgba(255,255,255,0.7);">Ligne</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.4);">Départ</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.4);">Arrivée</span>
+        </div>
+      </div>
+
+      <!-- Trams -->
+      <div style="padding:10px 16px 4px;">
+        <p style="font-size:10px;color:var(--color-text-secondary);font-weight:500;margin:0 0 8px;letter-spacing:0.4px;">Tramways</p>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <span class="chip-tram"><i class="ti ti-versions" style="font-size:11px;" aria-hidden="true"></i>T1</span>
+          <span class="chip-tram chip-active"><i class="ti ti-versions" style="font-size:11px;" aria-hidden="true"></i>T2</span>
+          <span class="chip-tram"><i class="ti ti-versions" style="font-size:11px;" aria-hidden="true"></i>T3</span>
+          <span class="chip-tram"><i class="ti ti-versions" style="font-size:11px;" aria-hidden="true"></i>T4</span>
+        </div>
+      </div>
+      <!-- Bus -->
+      <div style="padding:6px 16px 12px;">
+        <p style="font-size:10px;color:var(--color-text-secondary);font-weight:500;margin:0 0 8px;letter-spacing:0.4px;">Bus</p>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <span class="chip-bus"><i class="ti ti-bus" style="font-size:11px;" aria-hidden="true"></i>L1</span>
+          <span class="chip-bus"><i class="ti ti-bus" style="font-size:11px;" aria-hidden="true"></i>L4</span>
+          <span class="chip-bus"><i class="ti ti-bus" style="font-size:11px;" aria-hidden="true"></i>L6</span>
+          <span class="chip-bus"><i class="ti ti-bus" style="font-size:11px;" aria-hidden="true"></i>L7</span>
+          <span class="chip-bus"><i class="ti ti-bus" style="font-size:11px;" aria-hidden="true"></i>L9</span>
+          <span class="chip-bus"><i class="ti ti-bus" style="font-size:11px;" aria-hidden="true"></i>L12</span>
+        </div>
+      </div>
+
+      <!-- Sélection en cours -->
+      <div style="margin:0 16px 12px;background:#E6F1FB;border-radius:var(--border-radius-md);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <i class="ti ti-versions" style="font-size:16px;color:#0C447C;" aria-hidden="true"></i>
+          <div>
+            <p style="font-size:13px;font-weight:500;color:#0C447C;margin:0;">Tramway T2</p>
+            <p style="font-size:11px;color:#185FA5;margin:2px 0 0;">Jacou ↔ Saint-Jean-de-Védas</p>
+          </div>
+        </div>
+        <i class="ti ti-check" style="font-size:16px;color:#0C447C;" aria-hidden="true"></i>
+      </div>
+
+      <div style="padding:0 16px 14px;">
+        <button style="width:100%;background:#1B3F72;color:#fff;border:none;border-radius:var(--border-radius-md);padding:11px;font-size:13px;font-weight:500;cursor:pointer;">Choisir l'arrêt de départ →</button>
+      </div>
+
+      <div class="homeind"><div style="width:80px;height:4px;background:var(--color-border-primary);border-radius:2px;"></div></div>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 2 — Arrêt de départ -->
+  <div>
+    <p class="slabel">② Arrêt de départ</p>
+    <div class="phone">
+      <div class="sbar"><span>9:41</span><div style="display:flex;gap:4px;"><i class="ti ti-wifi" style="color:#fff;font-size:12px;" aria-hidden="true"></i><i class="ti ti-battery" style="color:#fff;font-size:12px;" aria-hidden="true"></i></div></div>
+      <div class="hdr">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <button style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;" aria-label="Retour"><i class="ti ti-arrow-left" style="color:#fff;font-size:14px;" aria-hidden="true"></i></button>
+          <div>
+            <p style="color:rgba(255,255,255,0.6);font-size:10px;margin:0 0 1px;letter-spacing:0.4px;">Tramway T2 · Jacou → St-Jean</p>
+            <p style="color:#fff;font-size:15px;font-weight:500;margin:0;">Arrêt de départ</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="step-dot step-done"><i class="ti ti-check" style="font-size:10px;" aria-hidden="true"></i></div>
+          <div style="flex:1;height:1.5px;background:rgba(255,255,255,0.5);"></div>
+          <div class="step-dot step-curr">2</div>
+          <div style="flex:1;height:1.5px;background:rgba(255,255,255,0.2);"></div>
+          <div class="step-dot step-todo">3</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          <span style="font-size:9px;color:rgba(255,255,255,0.5);">Ligne</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.7);">Départ</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.4);">Arrivée</span>
+        </div>
+        <!-- Barre de recherche -->
+        <div style="background:rgba(255,255,255,0.15);border-radius:var(--border-radius-md);display:flex;align-items:center;gap:7px;padding:7px 10px;margin-top:10px;">
+          <i class="ti ti-search" style="color:rgba(255,255,255,0.55);font-size:14px;" aria-hidden="true"></i>
+          <span style="color:rgba(255,255,255,0.45);font-size:12px;">Rechercher un arrêt…</span>
+        </div>
+      </div>
+
+      <!-- Liste arrêts -->
+      <div style="padding:8px 0 0;">
+        <p style="font-size:10px;color:var(--color-text-secondary);font-weight:500;margin:0 0 2px;padding:0 16px;letter-spacing:0.4px;">Arrêts de la ligne — direction Jacou</p>
+        <div class="row sep" style="padding:9px 16px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#185FA5;flex-shrink:0;"></div>
+          <p style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin:0;flex:1;">Jacou</p>
+          <span style="font-size:11px;color:var(--color-text-secondary);">Terminus</span>
+        </div>
+        <div class="row sep" style="padding:9px 16px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#B5D4F4;flex-shrink:0;"></div>
+          <p style="font-size:13px;color:var(--color-text-primary);margin:0;flex:1;">Millénaire</p>
+          <i class="ti ti-chevron-right" style="font-size:14px;color:var(--color-text-secondary);" aria-hidden="true"></i>
+        </div>
+        <!-- Sélectionné -->
+        <div class="row sep" style="padding:9px 16px;background:#E6F1FB;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#0C447C;flex-shrink:0;"></div>
+          <p style="font-size:13px;font-weight:500;color:#0C447C;margin:0;flex:1;">Comédie</p>
+          <i class="ti ti-check" style="font-size:14px;color:#0C447C;" aria-hidden="true"></i>
+        </div>
+        <div class="row sep" style="padding:9px 16px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#B5D4F4;flex-shrink:0;"></div>
+          <p style="font-size:13px;color:var(--color-text-primary);margin:0;flex:1;">Place de l'Europe</p>
+          <i class="ti ti-chevron-right" style="font-size:14px;color:var(--color-text-secondary);" aria-hidden="true"></i>
+        </div>
+        <div class="row sep" style="padding:9px 16px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#B5D4F4;flex-shrink:0;"></div>
+          <p style="font-size:13px;color:var(--color-text-primary);margin:0;flex:1;">Gare Saint-Roch</p>
+          <i class="ti ti-chevron-right" style="font-size:14px;color:var(--color-text-secondary);" aria-hidden="true"></i>
+        </div>
+        <div class="row" style="padding:9px 16px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#B5D4F4;flex-shrink:0;"></div>
+          <p style="font-size:13px;color:var(--color-text-primary);margin:0;flex:1;">Croix d'Argent</p>
+          <i class="ti ti-chevron-right" style="font-size:14px;color:var(--color-text-secondary);" aria-hidden="true"></i>
+        </div>
+      </div>
+
+      <div style="padding:10px 16px 14px;">
+        <button style="width:100%;background:#1B3F72;color:#fff;border:none;border-radius:var(--border-radius-md);padding:11px;font-size:13px;font-weight:500;cursor:pointer;">Choisir l'arrêt d'arrivée →</button>
+      </div>
+      <div class="homeind"><div style="width:80px;height:4px;background:var(--color-border-primary);border-radius:2px;"></div></div>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 3 — Accueil résultant -->
+  <div>
+    <p class="slabel">③ Horaires en temps réel</p>
+    <div class="phone">
+      <div class="sbar"><span>9:41</span><div style="display:flex;gap:4px;"><i class="ti ti-wifi" style="color:#fff;font-size:12px;" aria-hidden="true"></i><i class="ti ti-battery" style="color:#fff;font-size:12px;" aria-hidden="true"></i></div></div>
+      <div class="hdr" style="padding-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <p style="color:rgba(255,255,255,0.6);font-size:10px;margin:0 0 2px;letter-spacing:0.4px;">Dernière recherche</p>
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
+              <span class="chip-tram" style="font-size:11px;padding:3px 8px;">T2</span>
+              <div style="width:6px;height:6px;border-radius:50%;background:#4ade80;"></div>
+              <span style="color:#4ade80;font-size:10px;font-weight:500;">En direct</span>
+            </div>
+            <p style="color:#fff;font-size:14px;font-weight:500;margin:0;">Jacou → Saint-Jean-de-Védas</p>
+          </div>
+          <button style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;" aria-label="Nouvelle recherche"><i class="ti ti-search" style="color:#fff;font-size:15px;" aria-hidden="true"></i></button>
+        </div>
+        <!-- Arrêt départ → arrivée -->
+        <div style="background:rgba(255,255,255,0.12);border-radius:var(--border-radius-md);padding:10px 12px;display:flex;align-items:center;gap:8px;">
+          <div style="text-align:center;flex:1;min-width:0;">
+            <p style="color:rgba(255,255,255,0.55);font-size:9px;margin:0 0 2px;letter-spacing:0.3px;">Départ</p>
+            <p style="color:#fff;font-size:13px;font-weight:500;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Comédie</p>
+          </div>
+          <i class="ti ti-arrow-right" style="color:rgba(255,255,255,0.4);font-size:16px;flex-shrink:0;" aria-hidden="true"></i>
+          <div style="text-align:center;flex:1;min-width:0;">
+            <p style="color:rgba(255,255,255,0.55);font-size:9px;margin:0 0 2px;letter-spacing:0.3px;">Arrivée</p>
+            <p style="color:#fff;font-size:13px;font-weight:500;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Gare St-Roch</p>
+          </div>
+          <div style="flex-shrink:0;text-align:center;">
+            <p style="color:rgba(255,255,255,0.55);font-size:9px;margin:0 0 2px;letter-spacing:0.3px;">Voie</p>
+            <p style="color:#fff;font-size:13px;font-weight:500;margin:0;">A</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prochains passages -->
+      <div style="padding:8px 0 0;">
+        <p style="font-size:10px;color:var(--color-text-secondary);font-weight:500;margin:0 0 2px;padding:0 16px;letter-spacing:0.4px;">Prochains passages</p>
+
+        <div class="row sep" style="padding:9px 16px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="ti ti-versions" style="font-size:18px;color:#185FA5;" aria-hidden="true"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin:0;">St-Jean-de-Védas Centre</p>
+            <p style="font-size:11px;color:var(--color-text-secondary);margin:2px 0 0;">Voie A · 09:43</p>
+          </div>
+          <span class="badge-soon">2 min</span>
+        </div>
+
+        <div class="row sep" style="padding:9px 16px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="ti ti-versions" style="font-size:18px;color:#185FA5;" aria-hidden="true"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin:0;">St-Jean-de-Védas Centre</p>
+            <p style="font-size:11px;color:var(--color-text-secondary);margin:2px 0 0;">Voie A · 09:51</p>
+          </div>
+          <span class="badge-med">10 min</span>
+        </div>
+
+        <div class="row sep" style="padding:9px 16px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="ti ti-versions" style="font-size:18px;color:#185FA5;" aria-hidden="true"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin:0;">St-Jean-de-Védas Centre</p>
+            <p style="font-size:11px;color:var(--color-text-secondary);margin:2px 0 0;">Voie A · 10:03</p>
+          </div>
+          <span class="badge-late">22 min</span>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div style="padding:8px 16px 12px;background:var(--color-background-secondary);">
+        <p style="font-size:10px;color:var(--color-text-secondary);font-weight:500;margin:0 0 7px;letter-spacing:0.4px;">T2 aujourd'hui</p>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
+          <div class="stat-c"><p style="font-size:10px;color:var(--color-text-secondary);margin:0 0 2px;">Ponctualité</p><p style="font-size:17px;font-weight:500;color:var(--color-text-primary);margin:0;">88%</p></div>
+          <div class="stat-c"><p style="font-size:10px;color:var(--color-text-secondary);margin:0 0 2px;">Retard moy.</p><p style="font-size:17px;font-weight:500;color:var(--color-text-primary);margin:0;">1 min 45</p></div>
+        </div>
+      </div>
+
+      <!-- Navbar -->
+      <div style="border-top:0.5px solid var(--color-border-tertiary);display:flex;background:var(--color-background-primary);">
+        <button class="navbtn" style="border-right:0.5px solid var(--color-border-tertiary);" aria-label="Favoris">
+          <i class="ti ti-star" style="font-size:19px;color:#185fa5;" aria-hidden="true"></i>
+          <span style="font-size:10px;color:#185fa5;font-weight:500;">Favoris</span>
+        </button>
+        <button class="navbtn" aria-label="Statistiques">
+          <i class="ti ti-chart-bar" style="font-size:19px;color:var(--color-text-secondary);" aria-hidden="true"></i>
+          <span style="font-size:10px;color:var(--color-text-secondary);font-weight:500;">Statistiques</span>
+        </button>
+      </div>
+      <div class="homeind"><div style="width:80px;height:4px;background:var(--color-border-primary);border-radius:2px;"></div></div>
+    </div>
+  </div>
+
+</div>
