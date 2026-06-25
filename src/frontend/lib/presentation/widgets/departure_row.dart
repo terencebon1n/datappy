@@ -80,7 +80,7 @@ class DepartureRow extends StatelessWidget {
     if (ts == null) return '--:--';
     final rem = ts - (now.millisecondsSinceEpoch ~/ 1000);
     if (rem <= 0)  return 'À quai';
-    if (rem < 60)  return '${rem} s';
+    if (rem < 60)  return '$rem s';
     return '${rem ~/ 60} min ${(rem % 60).toString().padLeft(2, '0')} s';
   }
 

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import async_db_manager
 from src.api.dependencies import redis_db
-from src.application.dto.route import ConveyanceDTO, RouteIdDTO, RouteTypeDTO
+from src.application.dto.route import ConveyanceDTO, RouteIdDTO
 from src.application.dto.stop import StopNameDTO, TransitPathDTO
 from src.application.dto.trip import DirectionDTO, PathDTO
 from src.application.services.api.route_loader import RouteLoaderService
@@ -28,20 +28,11 @@ async def get_cities() -> list[City]:
     return list(City)
 
 
-@gtfs_router.get("/route-type", response_model=list[RouteTypeDTO])
-async def get_route_types() -> list[RouteTypeDTO]:
-    async with AsyncSession(async_db_manager.async_engine) as session:
-        async with session.begin():
-            return await RouteLoaderService(session).get_route_types()
-
-
 @gtfs_router.get("/conveyance", response_model=list[ConveyanceDTO])
-async def get_conveyances(
-    selection: Annotated[RouteTypeDTO, Query()],
-) -> list[ConveyanceDTO]:
+async def get_conveyances() -> list[ConveyanceDTO]:
     async with AsyncSession(async_db_manager.async_engine) as session:
         async with session.begin():
-            return await RouteLoaderService(session).get_conveyances(selection.id)
+            return await RouteLoaderService(session).get_conveyances()
 
 
 @gtfs_router.get("/stop", response_model=list[StopNameDTO])

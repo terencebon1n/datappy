@@ -14,7 +14,10 @@ class TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final sel      = context.watch<RouteSelectionCubit>().state;
     final stopName = sel.sourceStop ?? 'Aucun arrêt';
-    final meta     = sel.selectedType?.name ?? 'Arrêt sélectionné';
+    final conv     = sel.selectedConveyance;
+    final meta     = conv != null
+        ? '${conv.shortName} · ${conv.typeName}'
+        : 'Arrêt sélectionné';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),

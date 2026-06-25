@@ -1,9 +1,8 @@
 import 'package:frontend/domain/conveyance.dart' show Conveyance;
-import 'package:frontend/domain/route_type.dart' show RouteType;
 
 
 abstract class IConveyanceRepository {
     abstract Map<String, String> headers;
 
-    Future<List<Conveyance>> resolveConveyances(RouteType routeType);
+    Future<List<Conveyance>> resolveConveyances();
 }
