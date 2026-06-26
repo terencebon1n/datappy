@@ -20,9 +20,9 @@ class DepartureBoard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF080B10),
+        color: TransitColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: TransitColors.borderSubtle),
+        border: Border.all(color: TransitColors.border),
       ),
       child: switch (state) {
         StopUpdateIdle()       => _placeholder('Sélectionnez une ligne via la recherche'),

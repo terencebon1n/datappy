@@ -17,10 +17,10 @@ void main() {
       expect(style.bg, FunnelColors.tramBg);
     });
 
-    test('unknown types fall back to the tram style', () {
+    test('unknown/extended types fall back to a generic transit style', () {
       final style = styleForType(99);
-      expect(style.icon, Icons.tram);
-      expect(style.bg, FunnelColors.tramBg);
+      expect(style.icon, Icons.directions_transit);
+      expect(style.bg, FunnelColors.tramBg); // keeps the neutral blue palette
     });
   });
 }
