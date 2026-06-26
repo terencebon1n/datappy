@@ -6,6 +6,7 @@ import 'package:frontend/infrastructure/backend/repositories/conveyance.dart' sh
 import 'package:frontend/infrastructure/backend/repositories/direction.dart' show DirectionRepository;
 import 'package:frontend/infrastructure/backend/repositories/stop_name.dart' show StopNameRepository;
 import 'package:frontend/infrastructure/backend/repositories/stop_update.dart' show StopUpdateRepository;
+import 'package:frontend/infrastructure/local/selection_store.dart' show SharedPrefsSelectionStore;
 
 import 'package:frontend/application/stop_update/cubit.dart' show StopUpdateCubit;
 import 'package:frontend/application/route_selection/cubit.dart' show RouteSelectionCubit;
@@ -14,7 +15,11 @@ import 'package:frontend/config/datappy_config.dart' show DatappyConfig;
 import 'package:frontend/presentation/transit_dashboard.dart' show TransitDashboard;
 
 
-void main() {
+Future<void> main() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    // One shared store instance so both cubits read/write the same blob.
+    final selectionStore = await SharedPrefsSelectionStore.create();
+
     runApp(
         MultiBlocProvider(
             providers: [
@@ -30,12 +35,14 @@ void main() {
                     ),
                     directionRepo: DirectionRepository(
                         apiBase: DatappyConfig.apiBase
-                    )
+                    ),
+                    selectionStore: selectionStore
                 )),
                 BlocProvider(create: (context) => StopUpdateCubit(
                     stopUpdateRepo: StopUpdateRepository(
                         wsBase: DatappyConfig.wsBase
-                    )
+                    ),
+                    selectionStore: selectionStore
                 ))
             ],
         child: const MaterialApp(

@@ -5,6 +5,8 @@ import 'package:frontend/domain/repositories/i_city.dart';
 import 'package:frontend/domain/repositories/i_conveyance.dart';
 import 'package:frontend/domain/repositories/i_direction.dart';
 import 'package:frontend/domain/repositories/i_stop_name.dart';
+import 'package:frontend/domain/repositories/i_selection_store.dart';
+import 'package:frontend/domain/saved_selection.dart';
 import 'package:frontend/domain/path.dart';
 import 'state.dart';
 
@@ -14,30 +16,82 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
   final IConveyanceRepository _conveyanceRepo;
   final IStopNameRepository _stopRepo;
   final IDirectionRepository _directionRepo;
+  final ISelectionStore _selectionStore;
 
   RouteSelectionCubit({
     required ICityRepository cityRepo,
     required IConveyanceRepository conveyanceRepo,
     required IStopNameRepository stopRepo,
     required IDirectionRepository directionRepo,
+    required ISelectionStore selectionStore,
   })  : _cityRepo = cityRepo,
         _conveyanceRepo = conveyanceRepo,
         _stopRepo = stopRepo,
         _directionRepo = directionRepo,
+        _selectionStore = selectionStore,
         super(const RouteSelectionState()) {
-    _loadCity();
+    _init();
   }
 
-  Future<void> _loadCity() async {
+  /// Load the city list and, if a previous selection was persisted, restore it
+  /// so the dashboard line card shows the last line immediately on launch.
+  Future<void> _init() async {
+    final saved = await _selectionStore.load();
     final cities = await _cityRepo.resolveCities();
-    emit(state.copyWith(cities: cities));
+    if (saved == null) {
+      emit(state.copyWith(cities: cities));
+      return;
+    }
+    emit(state.copyWith(
+      cities: cities,
+      selectedCity: saved.city,
+      selectedConveyance: saved.conveyance,
+      sourceStop: saved.sourceStop,
+      destStop: saved.destStop,
+      direction: saved.direction,
+    ));
   }
+
+  /// The selection shown on the dashboard before a search was opened, kept so
+  /// it can be restored if the user backs out without choosing a new route.
+  SavedSelection? _previousSelection;
 
   /// Restart a fresh search at the city step, keeping the loaded city list.
   void reset() {
     emit(RouteSelectionState(
       status: state.status,
       cities: state.cities,
+    ));
+  }
+
+  /// Open a fresh search from the dashboard, remembering the currently
+  /// committed selection so [cancelSearch] can restore it on a misclick / back.
+  void beginSearch() {
+    _previousSelection = state.canSubmit
+        ? SavedSelection(
+            city: state.selectedCity!,
+            conveyance: state.selectedConveyance!,
+            sourceStop: state.sourceStop!,
+            destStop: state.destStop!,
+            direction: state.direction!,
+          )
+        : null;
+    reset();
+  }
+
+  /// Restore the selection that was showing before [beginSearch]. Called when
+  /// the funnel is dismissed without completing a new search; clears to empty
+  /// when there was no prior selection.
+  void cancelSearch() {
+    final prev = _previousSelection;
+    emit(RouteSelectionState(
+      status: state.status,
+      cities: state.cities,
+      selectedCity: prev?.city,
+      selectedConveyance: prev?.conveyance,
+      sourceStop: prev?.sourceStop,
+      destStop: prev?.destStop,
+      direction: prev?.direction,
     ));
   }
 
@@ -92,6 +146,15 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
           ),
         );
         emit(state.copyWith(direction: directionData));
+        // Selection is now complete: persist it so it can be restored and
+        // reconnected on the next launch.
+        await _selectionStore.save(SavedSelection(
+          city: state.selectedCity!,
+          conveyance: state.selectedConveyance!,
+          sourceStop: state.sourceStop!,
+          destStop: state.destStop!,
+          direction: directionData,
+        ));
       } catch (e) {
         // Resolution failed: clear the destination so the "resolving" overlay
         // disappears and the user can pick another arrival stop.
