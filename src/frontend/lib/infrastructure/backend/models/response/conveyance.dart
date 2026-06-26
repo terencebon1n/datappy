@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 import 'package:frontend/domain/conveyance.dart' show Conveyance;
 
 
@@ -7,7 +5,7 @@ class ConveyanceResponse {
     final String id;
     final String shortName;
     final String longName;
-    final Color color;
+    final int colorValue;
     final int typeId;
     final String typeName;
 
@@ -15,7 +13,7 @@ class ConveyanceResponse {
         required this.id,
         required this.shortName,
         required this.longName,
-        required this.color,
+        required this.colorValue,
         required this.typeId,
         required this.typeName,
     });
@@ -23,15 +21,15 @@ class ConveyanceResponse {
     factory ConveyanceResponse.fromJson(Map<String, dynamic> json) {
         final colorStr = json['color'] as String?;
 
-        final colorInt = colorStr != null
-            ? int.tryParse('0xFF${colorStr.replaceFirst('#', '')}')
-            : null;
+        final colorValue = colorStr != null
+            ? (int.tryParse('0xFF${colorStr.replaceFirst('#', '')}') ?? 0xFFFFFFFF)
+            : 0xFFFFFFFF;
 
         return ConveyanceResponse(
             id: json['id'],
             shortName: json['short_name'],
             longName: json['long_name'],
-            color: colorInt != null ? Color(colorInt) : const Color(0xFFFFFFFF),
+            colorValue: colorValue,
             typeId: json['type'] as int,
             typeName: json['type_name'] as String,
         );
@@ -41,7 +39,7 @@ class ConveyanceResponse {
         id: id,
         shortName: shortName,
         longName: longName,
-        color: color,
+        colorValue: colorValue,
         typeId: typeId,
         typeName: typeName,
     );

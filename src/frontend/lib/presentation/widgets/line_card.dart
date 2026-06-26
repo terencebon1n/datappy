@@ -22,7 +22,8 @@ class LineCard extends StatelessWidget {
     final lineLabel = sel.selectedConveyance?.shortName
                     ?? sel.selectedConveyance?.id
                     ?? '—';
-    final lineColor = sel.selectedConveyance?.color;
+    final lineColorValue = sel.selectedConveyance?.colorValue;
+    final lineColor = lineColorValue == null ? null : Color(lineColorValue);
     final dest = sel.destStop ?? 'Destination non sélectionnée';
     final via  = sel.selectedConveyance?.longName ?? '';
 
@@ -38,7 +39,12 @@ class LineCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              _LineBadge(label: lineLabel, color: lineColor ?? TransitColors.accentBorder),
+              _LineBadge(
+                label: lineLabel,
+                color: (lineColor == null || lineColor.computeLuminance() > 0.9)
+                    ? TransitColors.accent
+                    : lineColor,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -92,12 +98,13 @@ class _LineBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onColor = color.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
     return Container(
       width: 38, height: 38,
       decoration: BoxDecoration(
-        color: Color.lerp(color, Colors.black, 0.5),
+        color: color,
         borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: color, width: 1.5),
+        border: Border.all(color: Color.lerp(color, Colors.black, 0.18)!, width: 1),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -105,7 +112,7 @@ class _LineBadge extends StatelessWidget {
         style: GoogleFonts.syne(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: Color.lerp(color, Colors.white, 0.5),
+          color: onColor,
         ),
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:frontend/domain/gtfs_route_type.dart';
+
 /// Light palette mirroring src/frontend/gtfsrt_flow_mockup.html.
 abstract final class FunnelColors {
   static const header        = Color(0xFF1B3F72);
@@ -56,27 +58,28 @@ const _tramStyle = ConveyanceStyle(
 );
 
 ConveyanceStyle styleForType(int typeId) {
-  switch (typeId) {
-    case 3: // bus
+  switch (GtfsRouteType.fromId(typeId)) {
+    case GtfsRouteType.bus:
       return const ConveyanceStyle(
         icon: Icons.directions_bus,
         bg: FunnelColors.busBg,
         fg: FunnelColors.busFg,
         accent: FunnelColors.busFg,
       );
-    case 1: // subway
+    case GtfsRouteType.subway:
       return _tramStyle.copyIcon(Icons.directions_subway);
-    case 2: // rail
+    case GtfsRouteType.rail:
       return _tramStyle.copyIcon(Icons.train);
-    case 4: // ferry
+    case GtfsRouteType.ferry:
       return _tramStyle.copyIcon(Icons.directions_boat);
-    case 5: // cable car
-    case 6: // gondola
-    case 7: // funicular
+    case GtfsRouteType.cableCar:
+    case GtfsRouteType.gondola:
+    case GtfsRouteType.funicular:
       return _tramStyle.copyIcon(Icons.directions_transit);
-    case 0: // tram
-    default:
+    case GtfsRouteType.tram:
       return _tramStyle;
+    case null: // extended / unknown route type
+      return _tramStyle.copyIcon(Icons.directions_transit);
   }
 }
 

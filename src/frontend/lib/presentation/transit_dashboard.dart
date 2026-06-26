@@ -21,8 +21,8 @@ class TransitDashboard extends StatefulWidget {
 }
 
 class _TransitDashboardState extends State<TransitDashboard> {
-  int      _navIndex = 0;
-  DateTime _now      = DateTime.now();
+  int _navIndex = 0;
+  DateTime _now = DateTime.now();
   late final Timer _ticker;
 
   @override
@@ -42,52 +42,54 @@ class _TransitDashboardState extends State<TransitDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ));
-
-    return Scaffold(
-      backgroundColor: TransitColors.bg,
-      extendBody: true,
-      body: SafeArea(
-        child: Column(
-          children: [
-            TopBar(onSearchTap: () => _openFunnel(context)),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 100),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    LineCard(now: _now),
-                    const SizedBox(height: 10),
-                    DepartureBoard(now: _now),
-                    const SizedBox(height: 8),
-                    const FooterHint(),
-                  ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: TransitColors.bg,
+        extendBody: true,
+        body: SafeArea(
+          child: Column(
+            children: [
+              TopBar(onSearchTap: () => _openFunnel(context)),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      LineCard(now: _now),
+                      const SizedBox(height: 10),
+                      DepartureBoard(now: _now),
+                      const SizedBox(height: 8),
+                      const FooterHint(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: BottomNav(
-        index: _navIndex,
-        onTap: (i) => setState(() => _navIndex = i),
+        bottomNavigationBar: BottomNav(
+          index: _navIndex,
+          onTap: (i) => setState(() => _navIndex = i),
+        ),
       ),
     );
   }
 
-    void _openFunnel(BuildContext context) {
-      // Start a fresh search at the city step. The funnel reads the app-level
-      // cubits directly, so it needs no providers of its own.
-      context.read<RouteSelectionCubit>().reset();
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          fullscreenDialog: true,
-          builder: (_) => const FunnelPage(),
-        ),
-      );
-    }
+  void _openFunnel(BuildContext context) {
+    // Start a fresh search at the city step. The funnel reads the app-level
+    // cubits directly, so it needs no providers of its own.
+    context.read<RouteSelectionCubit>().reset();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const FunnelPage(),
+      ),
+    );
+  }
 }

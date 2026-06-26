@@ -1,10 +1,8 @@
-import 'package:flutter/material.dart';
-
 class Conveyance {
     final String id;
     final String shortName;
     final String longName;
-    final Color color;
+    final int colorValue; // ARGB value; wrapped in a Color by the UI layer
     final int typeId;
     final String typeName;
 
@@ -12,7 +10,7 @@ class Conveyance {
         required this.id,
         required this.shortName,
         required this.longName,
-        required this.color,
+        required this.colorValue,
         required this.typeId,
         required this.typeName,
     });

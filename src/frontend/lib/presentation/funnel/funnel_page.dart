@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:frontend/application/route_selection/cubit.dart';
@@ -20,42 +21,55 @@ class FunnelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<RouteSelectionCubit, RouteSelectionState>(
-      listenWhen: (prev, curr) => !prev.canSubmit && curr.canSubmit,
-      listener: (context, state) {
-        context.read<StopUpdateCubit>().watchStopUpdates(
-              TransitPath(
-                city: state.selectedCity!.name.toLowerCase(),
-                routeId: state.selectedConveyance!.id,
-                direction: state.direction!,
-              ),
-            );
-        Navigator.of(context).pop();
-      },
-      child: Builder(
-        builder: (context) {
-          final step = context.select((RouteSelectionCubit c) => c.state.step);
-          return PopScope(
-            canPop: step == FunnelStep.city,
-            onPopInvokedWithResult: (didPop, _) {
-              if (!didPop) context.read<RouteSelectionCubit>().back();
-            },
-            child: Scaffold(
-              backgroundColor: FunnelColors.surface,
-              body: SafeArea(
-                top: false,
-                child: switch (step) {
-                  FunnelStep.city => const CityStep(),
-                  FunnelStep.line => const LineStep(),
-                  FunnelStep.source =>
-                    const StopStep(key: ValueKey('source'), isSource: true),
-                  FunnelStep.dest =>
-                    const StopStep(key: ValueKey('dest'), isSource: false),
-                },
-              ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: BlocListener<RouteSelectionCubit, RouteSelectionState>(
+        listenWhen: (prev, curr) => !prev.canSubmit && curr.canSubmit,
+        listener: (context, state) {
+          context.read<StopUpdateCubit>().watchStopUpdates(
+            TransitPath(
+              city: state.selectedCity!.name.toLowerCase(),
+              routeId: state.selectedConveyance!.id,
+              direction: state.direction!,
             ),
           );
+          Navigator.of(context).pop();
         },
+        child: Builder(
+          builder: (context) {
+            final step = context.select(
+              (RouteSelectionCubit c) => c.state.step,
+            );
+            return PopScope(
+              canPop: step == FunnelStep.city,
+              onPopInvokedWithResult: (didPop, _) {
+                if (!didPop) context.read<RouteSelectionCubit>().back();
+              },
+              child: Scaffold(
+                backgroundColor: FunnelColors.surface,
+                body: SafeArea(
+                  top: false,
+                  child: switch (step) {
+                    FunnelStep.city => const CityStep(),
+                    FunnelStep.line => const LineStep(),
+                    FunnelStep.source => const StopStep(
+                      key: ValueKey('source'),
+                      isSource: true,
+                    ),
+                    FunnelStep.dest => const StopStep(
+                      key: ValueKey('dest'),
+                      isSource: false,
+                    ),
+                  },
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

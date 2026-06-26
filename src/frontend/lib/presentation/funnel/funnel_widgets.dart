@@ -40,9 +40,10 @@ class RouteBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = styleForType(conveyance.typeId);
-    final faint = conveyance.color.computeLuminance() > 0.85;
-    final bg = faint ? style.bg : conveyance.color;
-    final fg = faint ? style.fg : funnelOnColor(conveyance.color);
+    final routeColor = Color(conveyance.colorValue);
+    final faint = routeColor.computeLuminance() > 0.85;
+    final bg = faint ? style.bg : routeColor;
+    final fg = faint ? style.fg : funnelOnColor(routeColor);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
