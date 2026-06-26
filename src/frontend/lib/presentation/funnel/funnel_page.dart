@@ -30,6 +30,11 @@ class FunnelPage extends StatelessWidget {
       child: BlocListener<RouteSelectionCubit, RouteSelectionState>(
         listenWhen: (prev, curr) => !prev.canSubmit && curr.canSubmit,
         listener: (context, state) {
+          // Only act on a genuine in-funnel completion. cancelSearch() also
+          // flips canSubmit true while restoring the previous selection, but it
+          // runs after this route starts popping (no longer current) — acting
+          // on it here would pop the dashboard too and leave a black screen.
+          if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
           context.read<StopUpdateCubit>().watchStopUpdates(
             TransitPath(
               city: state.selectedCity!.name.toLowerCase(),
@@ -37,7 +42,9 @@ class FunnelPage extends StatelessWidget {
               direction: state.direction!,
             ),
           );
-          Navigator.of(context).pop();
+          // Signal a completed search so the dashboard keeps the new selection
+          // instead of restoring the previous one.
+          Navigator.of(context).pop(true);
         },
         child: Builder(
           builder: (context) {

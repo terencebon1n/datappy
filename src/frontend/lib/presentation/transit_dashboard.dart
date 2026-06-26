@@ -82,14 +82,21 @@ class _TransitDashboardState extends State<TransitDashboard> {
   }
 
   void _openFunnel(BuildContext context) {
-    // Start a fresh search at the city step. The funnel reads the app-level
-    // cubits directly, so it needs no providers of its own.
-    context.read<RouteSelectionCubit>().reset();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => const FunnelPage(),
-      ),
-    );
+    // Start a fresh search at the city step, but remember the current selection
+    // so it survives a misclick: if the funnel is dismissed without completing
+    // a new search, restore what was showing before. The funnel reads the
+    // app-level cubits directly, so it needs no providers of its own.
+    final cubit = context.read<RouteSelectionCubit>();
+    cubit.beginSearch();
+    Navigator.of(context)
+        .push<bool>(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (_) => const FunnelPage(),
+          ),
+        )
+        .then((completed) {
+      if (completed != true) cubit.cancelSearch();
+    });
   }
 }
