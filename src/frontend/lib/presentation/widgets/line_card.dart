@@ -60,7 +60,7 @@ class LineCard extends StatelessWidget {
                     ),
                     if (via.isNotEmpty) ...[
                       const SizedBox(height: 2),
-                      Text(via, style: const TextStyle(fontSize: 9, color: TransitColors.textMuted)),
+                      Text(via, style: TextStyle(fontSize: 9, color: TransitColors.textMuted)),
                     ],
                   ],
                 ),

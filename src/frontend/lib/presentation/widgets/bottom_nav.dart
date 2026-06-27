@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:frontend/application/theme/cubit.dart';
 import 'package:frontend/presentation/theme/colors.dart';
 
 class BottomNav extends StatelessWidget {
@@ -9,6 +12,8 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = resolveIsDark(context.watch<ThemeCubit>().state);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         12, 0, 12, MediaQuery.of(context).padding.bottom + 10,
@@ -23,9 +28,13 @@ class BottomNav extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _NavItem(icon: Icons.favorite_rounded,  label: 'Favoris', active: index == 0, onTap: () => onTap(0)),
-            _NavItem(icon: Icons.tune_rounded,       label: 'Filtres', active: index == 1, onTap: () => onTap(1)),
-            _NavItem(icon: Icons.bar_chart_rounded,  label: 'Stats',   active: index == 2, onTap: () => onTap(2)),
+            _NavItem(icon: Icons.favorite_rounded, label: 'Favoris', active: index == 0, onTap: () => onTap(0)),
+            _NavItem(
+              icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              label: 'Thème',
+              active: false,
+              onTap: () => context.read<ThemeCubit>().toggle(),
+            ),
           ],
         ),
       ),

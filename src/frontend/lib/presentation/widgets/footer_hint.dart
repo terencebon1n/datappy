@@ -13,8 +13,8 @@ class FooterHint extends StatelessWidget {
     final state = context.watch<StopUpdateCubit>().state;
     if (state is! StopUpdateLive) return const SizedBox.shrink();
 
-    return const Padding(
-      padding: EdgeInsets.only(top: 6),
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
       child: Text(
         'Mis à jour à la seconde · GTFS Realtime',
         textAlign: TextAlign.center,
