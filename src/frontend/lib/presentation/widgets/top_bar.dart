@@ -39,7 +39,7 @@ class TopBar extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   meta.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9,
                     color: TransitColors.textMuted,
                     letterSpacing: 0.7,
@@ -58,7 +58,7 @@ class TopBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: TransitColors.border),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.search_rounded,
                 color: TransitColors.textSecondary,
                 size: 20,

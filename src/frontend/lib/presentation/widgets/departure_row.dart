@@ -40,7 +40,7 @@ class DepartureRow extends StatelessWidget {
                   width: 18,
                   child: Text(
                     '$rank',
-                    style: const TextStyle(fontSize: 10, color: TransitColors.textMuted),
+                    style: TextStyle(fontSize: 10, color: TransitColors.textMuted),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -60,7 +60,7 @@ class DepartureRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'Départ prévue · $absTime',
-                        style: const TextStyle(fontSize: 8.5, color: TransitColors.textMuted),
+                        style: TextStyle(fontSize: 8.5, color: TransitColors.textMuted),
                       ),
                     ],
                   ),
@@ -70,7 +70,7 @@ class DepartureRow extends StatelessWidget {
             ),
           ),
           if (showDivider)
-            const Divider(height: 1, thickness: 1, color: TransitColors.borderSubtle),
+            Divider(height: 1, thickness: 1, color: TransitColors.borderSubtle),
         ],
       ),
     );

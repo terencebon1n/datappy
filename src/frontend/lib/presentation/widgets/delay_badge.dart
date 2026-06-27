@@ -27,7 +27,7 @@ class DelayBadge extends StatelessWidget {
       children: [
         Text(label, style: TextStyle(fontSize: 10, color: color)),
         const SizedBox(height: 2),
-        Text(sub, style: const TextStyle(fontSize: 8, color: TransitColors.textMuted)),
+        Text(sub, style: TextStyle(fontSize: 8, color: TransitColors.textMuted)),
       ],
     );
   }

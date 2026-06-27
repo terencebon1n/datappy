@@ -53,7 +53,7 @@ class DepartureBoard extends StatelessWidget {
       height: 200,
       child: Center(
         child: loading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22, height: 22,
                 child: CircularProgressIndicator(
                   color: TransitColors.accent,

@@ -38,7 +38,7 @@ class CityStep extends StatelessWidget {
                       InkWell(
                         onTap: () => cubit.selectCity(city),
                         child: Container(
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(color: FunnelColors.border, width: 0.5),
                             ),
@@ -52,14 +52,14 @@ class CityStep extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   _label(city.name),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     color: FunnelColors.textPrimary,
                                   ),
                                 ),
                               ),
-                              const Icon(Icons.chevron_right,
+                              Icon(Icons.chevron_right,
                                   size: 18, color: FunnelColors.textSecondary),
                             ],
                           ),

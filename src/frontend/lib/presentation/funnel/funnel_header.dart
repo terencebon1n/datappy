@@ -50,7 +50,7 @@ class FunnelHeader extends StatelessWidget {
                       overline.toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: FunnelColors.onHeaderMuted,
                         fontSize: 10,
                         letterSpacing: 0.4,
@@ -99,7 +99,7 @@ class _CircleButton extends StatelessWidget {
       child: Container(
         width: 32,
         height: 32,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: FunnelColors.headerFieldBg,
           shape: BoxShape.circle,
         ),

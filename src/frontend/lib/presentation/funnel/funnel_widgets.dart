@@ -14,7 +14,7 @@ class FunnelSectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.4,
@@ -89,7 +89,7 @@ class RouteListTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: FunnelColors.border, width: 0.5)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -102,10 +102,10 @@ class RouteListTile extends StatelessWidget {
                 routeExtendedName(conveyance),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, color: FunnelColors.textPrimary),
+                style: TextStyle(fontSize: 13, color: FunnelColors.textPrimary),
               ),
             ),
-            const Icon(Icons.chevron_right, size: 18, color: FunnelColors.textSecondary),
+            Icon(Icons.chevron_right, size: 18, color: FunnelColors.textSecondary),
           ],
         ),
       ),
@@ -139,7 +139,7 @@ class FunnelSelectionBar extends StatelessWidget {
                   routeExtendedName(line),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: FunnelColors.textPrimary,
@@ -160,7 +160,7 @@ class FunnelSelectionBar extends StatelessWidget {
                       'Départ · $origin',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: FunnelColors.textSecondary),
+                      style: TextStyle(fontSize: 12, color: FunnelColors.textSecondary),
                     ),
                   ),
                 ],

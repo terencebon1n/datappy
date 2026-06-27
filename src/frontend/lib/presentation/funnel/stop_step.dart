@@ -84,8 +84,8 @@ class _StopStepState extends State<StopStep> {
                               : "Choisissez l'arrivée",
                         ),
                         if (filtered.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                             child: Text(
                               'Aucun arrêt trouvé',
                               style: TextStyle(
@@ -130,7 +130,7 @@ class _SearchField extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         children: [
-          const Icon(Icons.search, size: 16, color: FunnelColors.onHeaderFaint),
+          Icon(Icons.search, size: 16, color: FunnelColors.onHeaderFaint),
           const SizedBox(width: 7),
           Expanded(
             child: TextField(
@@ -138,7 +138,7 @@ class _SearchField extends StatelessWidget {
               onChanged: onChanged,
               style: const TextStyle(color: Colors.white, fontSize: 13),
               cursorColor: Colors.white,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 hintText: 'Rechercher un arrêt…',
@@ -171,7 +171,7 @@ class _StopRow extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: selected ? FunnelColors.selectedRowBg : null,
-          border: const Border(
+          border: Border(
             bottom: BorderSide(color: FunnelColors.border, width: 0.5),
           ),
         ),
@@ -214,9 +214,9 @@ class _ResolvingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Positioned.fill(
+    return Positioned.fill(
       child: ColoredBox(
-        color: Color(0xCCFFFFFF),
+        color: FunnelColors.surface.withValues(alpha: 0.8),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
