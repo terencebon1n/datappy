@@ -28,7 +28,8 @@ class BottomNav extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _NavItem(icon: Icons.favorite_rounded, label: 'Favoris', active: index == 0, onTap: () => onTap(0)),
+            _NavItem(icon: Icons.home_rounded, label: 'Accueil', active: index == 0, onTap: () => onTap(0)),
+            _NavItem(icon: Icons.favorite_rounded, label: 'Favoris', active: index == 1, onTap: () => onTap(1)),
             _NavItem(
               icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
               label: 'Thème',
