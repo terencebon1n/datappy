@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Annotated, Optional
 
 from fastapi import (
@@ -21,6 +22,12 @@ from src.domain.gtfs_rt.enums import City
 from src.domain.gtfs_rt.stop_update import StopUpdate
 
 from ..router import basic_router, gtfs_router, gtfs_rt_router
+
+# How often the feed is polled, and the longest the server stays silent before
+# re-sending the current payload as a keepalive so idle proxies don't drop the
+# connection.
+_POLL_INTERVAL_SECONDS = 5
+_KEEPALIVE_SECONDS = 25
 
 
 @basic_router.get("/city")
@@ -67,19 +74,31 @@ async def ws_stop_updates(
             return
 
     async def produce_updates() -> None:
-        async with AsyncSession(async_db_manager.async_engine) as session:
-            async with session.begin():
-                feed = StopUpdateFeed(redis_db, session)
-                last_data: Optional[list[StopUpdate]] = None
-                while True:
-                    data: list[StopUpdate] = await feed.get_updates(selection)
-                    if data != last_data:
-                        await websocket.send_json(
-                            [stop_update.model_dump() for stop_update in data]
-                        )
-                        last_data = data
+        last_data: Optional[list[StopUpdate]] = None
+        last_sent_at = 0.0
+        while True:
+            # A fresh session per poll returns the pooled connection between
+            # polls instead of pinning one (and an open transaction) for the
+            # whole connection lifetime.
+            try:
+                async with AsyncSession(async_db_manager.async_engine) as session:
+                    async with session.begin():
+                        feed = StopUpdateFeed(redis_db, session)
+                        data: list[StopUpdate] = await feed.get_updates(selection)
+            except Exception:
+                # Transient DB/Redis failure: close the socket so the client
+                # reconnects rather than hanging on a dead feed.
+                return
 
-                    await asyncio.sleep(5)
+            now = time.monotonic()
+            if data != last_data or now - last_sent_at >= _KEEPALIVE_SECONDS:
+                await websocket.send_json(
+                    [stop_update.model_dump() for stop_update in data]
+                )
+                last_data = data
+                last_sent_at = now
+
+            await asyncio.sleep(_POLL_INTERVAL_SECONDS)
 
     tasks = [
         asyncio.create_task(produce_updates()),
