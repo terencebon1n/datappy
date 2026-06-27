@@ -19,6 +19,14 @@ class StopUpdateCubit extends Cubit<StopUpdateState> with WidgetsBindingObserver
   Timer? _reconnectTimer;
   int _reconnectAttempt = 0;
 
+  /// Liveness timer. The server emits at least every [_silenceTimeout] — a
+  /// keepalive even when departures are unchanged — so a longer silence means
+  /// the socket died without an error/close event (e.g. a Wi-Fi↔cellular switch
+  /// left it half-open). Reset on every message; on expiry we drop and
+  /// reconnect, since `onError`/`onDone` never fire for a zombie socket.
+  Timer? _watchdog;
+  static const _silenceTimeout = Duration(seconds: 35);
+
   StopUpdateCubit({
     required IStopUpdateRepository stopUpdateRepo,
     required ISelectionStore selectionStore,
@@ -68,23 +76,46 @@ class StopUpdateCubit extends Cubit<StopUpdateState> with WidgetsBindingObserver
     bool silentOnError = false,
   }) async {
     await _sub?.cancel();
+    _watchdog?.cancel();
     // Avoid flashing the connecting state over live data on an automatic retry.
     if (state is! StopUpdateLive) emit(const StopUpdateConnecting());
 
-    _sub = _stopUpdateRepo.watchStopUpdates(path).listen(
-          (stopUpdates) {
-            _reconnectAttempt = 0;
-            emit(StopUpdateLive(stopUpdates));
-          },
-          onError: (e) => _scheduleReconnect(silentOnError),
-          onDone: () => _scheduleReconnect(silentOnError),
-        );
+    try {
+      _sub = _stopUpdateRepo.watchStopUpdates(path).listen(
+            (stopUpdates) {
+              _reconnectAttempt = 0;
+              _armWatchdog(silentOnError); // each message proves the link is alive
+              emit(StopUpdateLive(stopUpdates));
+            },
+            onError: (e) => _scheduleReconnect(silentOnError),
+            onDone: () => _scheduleReconnect(silentOnError),
+          );
+      // Guard the connection attempt itself: if the first message never arrives
+      // the watchdog tears it down and retries.
+      _armWatchdog(silentOnError);
+    } catch (_) {
+      // Connecting threw synchronously (e.g. a bad URI/state): don't let the
+      // reconnect chain die — schedule another attempt.
+      _scheduleReconnect(silentOnError);
+    }
+  }
+
+  /// (Re)arm the liveness timer. When it fires, no data — not even the server's
+  /// periodic keepalive — arrived in time, so the socket is silently dead:
+  /// cancel it and reconnect.
+  void _armWatchdog(bool silentOnError) {
+    _watchdog?.cancel();
+    _watchdog = Timer(_silenceTimeout, () {
+      _sub?.cancel();
+      _scheduleReconnect(silentOnError);
+    });
   }
 
   /// Schedules a reconnect with capped exponential backoff. No-op if a
   /// reconnect is already pending or there is no active selection.
   void _scheduleReconnect(bool silentOnError) {
     if (_current == null || (_reconnectTimer?.isActive ?? false)) return;
+    _watchdog?.cancel();
 
     // Surface the drop only when not silent and not already showing live data,
     // so a restored feed keeps its last departures while it retries.
@@ -114,6 +145,7 @@ class StopUpdateCubit extends Cubit<StopUpdateState> with WidgetsBindingObserver
   void stop() {
     _current = null;
     _reconnectTimer?.cancel();
+    _watchdog?.cancel();
     _sub?.cancel();
     emit(const StopUpdateIdle());
   }
@@ -122,6 +154,7 @@ class StopUpdateCubit extends Cubit<StopUpdateState> with WidgetsBindingObserver
   Future<void> close() {
     WidgetsBinding.instance.removeObserver(this);
     _reconnectTimer?.cancel();
+    _watchdog?.cancel();
     _sub?.cancel();
     return super.close();
   }
