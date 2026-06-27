@@ -8,9 +8,11 @@ import 'package:frontend/infrastructure/backend/repositories/stop_name.dart' sho
 import 'package:frontend/infrastructure/backend/repositories/stop_update.dart' show StopUpdateRepository;
 import 'package:frontend/infrastructure/local/selection_store.dart' show SharedPrefsSelectionStore;
 import 'package:frontend/infrastructure/local/theme_store.dart' show SharedPrefsThemeStore;
+import 'package:frontend/infrastructure/local/favorites_store.dart' show SharedPrefsFavoritesStore;
 
 import 'package:frontend/application/stop_update/cubit.dart' show StopUpdateCubit;
 import 'package:frontend/application/route_selection/cubit.dart' show RouteSelectionCubit;
+import 'package:frontend/application/favorites/cubit.dart' show FavoritesCubit;
 import 'package:frontend/application/theme/cubit.dart' show ThemeCubit, resolveIsDark;
 import 'package:frontend/config/datappy_config.dart' show DatappyConfig;
 
@@ -27,6 +29,7 @@ Future<void> main() async {
     // uses the right palette (no light-to-dark flash on launch).
     final themeStore = await SharedPrefsThemeStore.create();
     final initialThemeMode = themeStore.load() ?? ThemeMode.system;
+    final favoritesStore = await SharedPrefsFavoritesStore.create();
 
     runApp(
         MultiBlocProvider(
@@ -55,6 +58,9 @@ Future<void> main() async {
                 BlocProvider(create: (context) => ThemeCubit(
                     store: themeStore,
                     initial: initialThemeMode
+                )),
+                BlocProvider(create: (context) => FavoritesCubit(
+                    store: favoritesStore
                 ))
             ],
             child: BlocBuilder<ThemeCubit, ThemeMode>(

@@ -52,6 +52,21 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
     ));
   }
 
+  /// Restore a previously saved selection (e.g. a tapped favorite) onto the
+  /// dashboard and persist it as the last selection so it survives a restart,
+  /// just like completing a fresh search. The caller is responsible for
+  /// (re)starting the live feed via [StopUpdateCubit.watchStopUpdates].
+  Future<void> loadSelection(SavedSelection s) async {
+    emit(state.copyWith(
+      selectedCity: s.city,
+      selectedConveyance: s.conveyance,
+      sourceStop: s.sourceStop,
+      destStop: s.destStop,
+      direction: s.direction,
+    ));
+    await _selectionStore.save(s);
+  }
+
   /// The selection shown on the dashboard before a search was opened, kept so
   /// it can be restored if the user backs out without choosing a new route.
   SavedSelection? _previousSelection;
