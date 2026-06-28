@@ -16,9 +16,11 @@ class StopUpdateCubit extends Cubit<StopUpdateState> with WidgetsBindingObserver
   TransitPath? _current;
   Timer? _reconnectTimer;
   int _reconnectAttempt = 0;
+  bool _silentOnError = false;
 
   Timer? _watchdog;
   static const _silenceTimeout = Duration(seconds: 35);
+  static const _maxBackoffSeconds = 5;
 
   StopUpdateCubit({
     required IStopUpdateRepository stopUpdateRepo,
@@ -48,56 +50,57 @@ class StopUpdateCubit extends Cubit<StopUpdateState> with WidgetsBindingObserver
     bool silentOnError = false,
   }) async {
     _current = transitPath;
+    _silentOnError = silentOnError;
     _reconnectTimer?.cancel();
     _reconnectAttempt = 0;
-    await _subscribe(transitPath, silentOnError: silentOnError);
+    emit(const StopUpdateConnecting());
+    await _subscribe(transitPath);
   }
 
-  Future<void> _subscribe(
-    TransitPath path, {
-    bool silentOnError = false,
-  }) async {
+  Future<void> _subscribe(TransitPath path) async {
     await _sub?.cancel();
     _watchdog?.cancel();
-    if (state is! StopUpdateLive) emit(const StopUpdateConnecting());
 
     try {
       _sub = _stopUpdateRepo.watchStopUpdates(path).listen(
             (stopUpdates) {
               _reconnectAttempt = 0;
-              _armWatchdog(silentOnError);
+              _silentOnError = false;
+              _armWatchdog();
               emit(StopUpdateLive(stopUpdates));
             },
-            onError: (e) => _scheduleReconnect(silentOnError),
-            onDone: () => _scheduleReconnect(silentOnError),
+            onError: (e) => _scheduleReconnect(),
+            onDone: () => _scheduleReconnect(),
           );
-      _armWatchdog(silentOnError);
+      _armWatchdog();
     } catch (_) {
-      _scheduleReconnect(silentOnError);
+      _scheduleReconnect();
     }
   }
 
-  void _armWatchdog(bool silentOnError) {
+  void _armWatchdog() {
     _watchdog?.cancel();
     _watchdog = Timer(_silenceTimeout, () {
       _sub?.cancel();
-      _scheduleReconnect(silentOnError);
+      _scheduleReconnect();
     });
   }
 
-  void _scheduleReconnect(bool silentOnError) {
+  void _scheduleReconnect() {
     if (_current == null || (_reconnectTimer?.isActive ?? false)) return;
     _watchdog?.cancel();
 
-    if (!silentOnError && state is! StopUpdateLive) {
+    if (!_silentOnError) {
       emit(const StopUpdateError('Connexion perdue, reconnexion…'));
     }
 
-    final delay = Duration(seconds: min(30, 1 << _reconnectAttempt));
+    final delay = Duration(
+      seconds: min(_maxBackoffSeconds, 1 << min(_reconnectAttempt, 4)),
+    );
     _reconnectAttempt++;
     _reconnectTimer = Timer(delay, () {
       final path = _current;
-      if (path != null) _subscribe(path, silentOnError: silentOnError);
+      if (path != null) _subscribe(path);
     });
   }
 
