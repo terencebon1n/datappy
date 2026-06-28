@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:convert' show jsonDecode;
 
 import 'package:web_socket_channel/web_socket_channel.dart' show WebSocketChannel;
@@ -14,7 +15,7 @@ class StopUpdateRepository implements IStopUpdateRepository {
     StopUpdateRepository({required this.wsBase});
 
     @override
-    Stream<List<StopUpdate>> watchStopUpdates(TransitPath transitPath) {
+    Stream<List<StopUpdate>> watchStopUpdates(TransitPath transitPath) async* {
         final channel = WebSocketChannel.connect(
             Uri.parse('$wsBase/stop-updates').replace(
                 queryParameters: {
@@ -27,12 +28,17 @@ class StopUpdateRepository implements IStopUpdateRepository {
             )
         );
 
-        return channel.stream.map((data) {
-            final List decoded = jsonDecode(data);
-            return decoded.map(
-                (e) => StopUpdateResponse.fromJson(e).toDomain()
-            ).toList();
-        });
+        try {
+            await channel.ready;
+            yield* channel.stream.map((data) {
+                final List decoded = jsonDecode(data);
+                return decoded.map(
+                    (e) => StopUpdateResponse.fromJson(e).toDomain()
+                ).toList();
+            });
+        } finally {
+            unawaited(channel.sink.close().catchError((_) {}));
+        }
     }
 
 }
