@@ -54,11 +54,12 @@ class StopUpdateCubit extends Cubit<StopUpdateState> with WidgetsBindingObserver
     _reconnectTimer?.cancel();
     _reconnectAttempt = 0;
     emit(const StopUpdateConnecting());
-    await _subscribe(transitPath);
+    _subscribe(transitPath);
   }
 
-  Future<void> _subscribe(TransitPath path) async {
-    await _sub?.cancel();
+  void _subscribe(TransitPath path) {
+    _sub?.cancel();
+    _sub = null;
     _watchdog?.cancel();
 
     try {
