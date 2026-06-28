@@ -7,9 +7,6 @@ import 'package:frontend/presentation/funnel/funnel_colors.dart';
 import 'package:frontend/presentation/funnel/funnel_header.dart';
 import 'package:frontend/presentation/funnel/funnel_widgets.dart';
 
-/// Stop picker, shared by the "Départ" (source) and "Arrivée" (dest) steps.
-/// A single tap commits the stop: source advances to dest, dest resolves the
-/// direction and the funnel auto-closes (see FunnelPage's listener).
 class StopStep extends StatefulWidget {
   const StopStep({super.key, required this.isSource});
 
@@ -36,7 +33,6 @@ class _StopStepState extends State<StopStep> {
     final conv = state.selectedConveyance;
     final cityName = state.selectedCity?.name ?? '';
 
-    // On the arrival step, the chosen departure can't also be the arrival.
     var stops = state.stops;
     if (!widget.isSource) {
       stops = stops.where((s) => s != state.sourceStop).toList();

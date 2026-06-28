@@ -4,8 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/application/route_selection/state.dart' show FunnelStep;
 import 'package:frontend/presentation/funnel/funnel_colors.dart';
 
-/// Dark-blue funnel header (mockup `.hdr`) with an optional 3-dot stepper
-/// (Ligne · Départ · Arrivée) and an optional [bottom] slot (e.g. a search bar).
 class FunnelHeader extends StatelessWidget {
   const FunnelHeader({
     super.key,
@@ -22,7 +20,6 @@ class FunnelHeader extends StatelessWidget {
   final VoidCallback onLeading;
   final bool leadingIsClose;
 
-  /// When non-null, renders the funnel stepper with this step as current.
   final FunnelStep? stepperFor;
   final Widget? bottom;
 

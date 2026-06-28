@@ -21,9 +21,6 @@ class TopBar extends StatelessWidget {
         ? '${conv.shortName} · ${conv.typeName}'
         : 'Arrêt sélectionné';
 
-    // The current selection can be saved as a favorite only when it is complete
-    // (a direction has been resolved). Built once so the icon state and the tap
-    // handler agree on the same selection.
     final current = sel.canSubmit
         ? SavedSelection(
             city: sel.selectedCity!,

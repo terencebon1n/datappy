@@ -96,8 +96,6 @@ class _TransitDashboardState extends State<TransitDashboard> {
     );
   }
 
-  /// Load a saved favorite: restore it onto the dashboard, (re)connect its live
-  /// feed and jump back to Home. Mirrors what the funnel does on completion.
   void _loadFavorite(SavedSelection fav) {
     context.read<RouteSelectionCubit>().loadSelection(fav);
     context.read<StopUpdateCubit>().watchStopUpdates(
@@ -111,10 +109,6 @@ class _TransitDashboardState extends State<TransitDashboard> {
   }
 
   void _openFunnel(BuildContext context) {
-    // Start a fresh search at the city step, but remember the current selection
-    // so it survives a misclick: if the funnel is dismissed without completing
-    // a new search, restore what was showing before. The funnel reads the
-    // app-level cubits directly, so it needs no providers of its own.
     final cubit = context.read<RouteSelectionCubit>();
     cubit.beginSearch();
     Navigator.of(context)

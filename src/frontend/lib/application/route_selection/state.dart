@@ -4,8 +4,6 @@ import 'package:frontend/domain/direction.dart';
 
 enum RouteSelectionStatus { loading, ready }
 
-/// The steps of the search funnel. `city` precedes the funnel proper
-/// (Ligne -> Depart -> Arrivee).
 enum FunnelStep { city, line, source, dest }
 
 class RouteSelectionState {

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:frontend/domain/conveyance.dart';
 import 'package:frontend/presentation/funnel/funnel_colors.dart';
 
-/// Small uppercase section label (mockup `.slabel` style, dark variant).
 class FunnelSectionLabel extends StatelessWidget {
   const FunnelSectionLabel(this.text, {super.key});
   final String text;
@@ -25,12 +24,9 @@ class FunnelSectionLabel extends StatelessWidget {
   }
 }
 
-/// Extended, human-readable route label: `{route_id} - {route_long_name}`.
 String routeExtendedName(Conveyance c) =>
     c.longName.isNotEmpty ? '${c.id} - ${c.longName}' : c.id;
 
-/// Colored pill showing a route's short name in its own GTFS colour.
-/// Falls back to the type palette when the route has no (near-white) colour.
 class RouteBadge extends StatelessWidget {
   const RouteBadge(this.conveyance, {super.key, this.fontSize = 12});
 
@@ -73,7 +69,6 @@ class RouteBadge extends StatelessWidget {
   }
 }
 
-/// A tappable route row: coloured badge + `{id} - {long name}`.
 class RouteListTile extends StatelessWidget {
   const RouteListTile({
     super.key,
@@ -113,8 +108,6 @@ class RouteListTile extends StatelessWidget {
   }
 }
 
-/// Running selection shown at the top of later funnel steps so the user can
-/// confirm what they picked. Shows the line, plus the origin on the dest step.
 class FunnelSelectionBar extends StatelessWidget {
   const FunnelSelectionBar({super.key, required this.line, this.origin});
 

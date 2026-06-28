@@ -10,8 +10,6 @@ import 'package:frontend/presentation/funnel/funnel_widgets.dart';
 class LineStep extends StatelessWidget {
   const LineStep({super.key});
 
-  /// Group conveyances by type name, preserving the backend ordering
-  /// (sorted by type then short name).
   Map<String, List<Conveyance>> _grouped(List<Conveyance> items) {
     final groups = <String, List<Conveyance>>{};
     for (final c in items) {

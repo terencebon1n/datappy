@@ -6,7 +6,6 @@ import 'package:frontend/domain/saved_selection.dart' show SavedSelection;
 import 'package:frontend/domain/repositories/i_selection_store.dart' show ISelectionStore;
 
 
-/// Persists the last selection as a single JSON blob in [SharedPreferences].
 class SharedPrefsSelectionStore implements ISelectionStore {
     static const String _key = 'last_selection';
 
@@ -14,8 +13,6 @@ class SharedPrefsSelectionStore implements ISelectionStore {
 
     SharedPrefsSelectionStore._(this._prefs);
 
-    /// Loads [SharedPreferences] once so callers (the cubits) can read/write
-    /// synchronously afterwards.
     static Future<SharedPrefsSelectionStore> create() async =>
         SharedPrefsSelectionStore._(await SharedPreferences.getInstance());
 
@@ -29,7 +26,6 @@ class SharedPrefsSelectionStore implements ISelectionStore {
         try {
             return SavedSelection.fromJson(jsonDecode(raw) as Map<String, dynamic>);
         } catch (_) {
-            // Corrupt or schema-changed blob: treat as no saved selection.
             return null;
         }
     }

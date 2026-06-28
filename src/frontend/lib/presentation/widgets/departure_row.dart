@@ -15,7 +15,7 @@ class DepartureRow extends StatelessWidget {
   });
 
   final int      rank;
-  final dynamic  departure; // StopDeparture — departureTime: int?, arrivalDelay: int
+  final dynamic  departure;
   final DateTime now;
   final double   opacity;
   final bool     showDivider;
