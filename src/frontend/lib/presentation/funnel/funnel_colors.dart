@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:frontend/domain/gtfs_route_type.dart';
 
-/// Themeable chrome colors for the search funnel (surfaces, text, header).
-///
-/// Route-family colors (tram/bus) are intentionally *not* here — they are
-/// brand-identity colors kept constant across themes (see below).
 class FunnelPalette {
   final Color header;
   final Color surface;
@@ -18,7 +14,6 @@ class FunnelPalette {
   final Color stepDoneFg;
   final Color live;
 
-  // On-header text tints (drawn on the dark-blue header band).
   final Color onHeader;
   final Color onHeaderMuted;
   final Color onHeaderFaint;
@@ -42,7 +37,6 @@ class FunnelPalette {
   });
 }
 
-/// Light palette mirroring src/frontend/gtfsrt_flow_mockup.html.
 const lightFunnel = FunnelPalette(
   header:        Color(0xFF1B3F72),
   surface:       Color(0xFFFFFFFF),
@@ -55,13 +49,11 @@ const lightFunnel = FunnelPalette(
   stepDoneFg:    Color(0xFF27500A),
   live:          Color(0xFF4ADE80),
   onHeader:      Colors.white,
-  onHeaderMuted: Color(0x99FFFFFF), // 60% white
-  onHeaderFaint: Color(0x66FFFFFF), // 40% white
-  headerFieldBg: Color(0x26FFFFFF), // 15% white
+  onHeaderMuted: Color(0x99FFFFFF),
+  onHeaderFaint: Color(0x66FFFFFF),
+  headerFieldBg: Color(0x26FFFFFF),
 );
 
-/// Dark counterpart of [lightFunnel]. The header stays a dark-blue band, so the
-/// white on-header tints carry over unchanged.
 const darkFunnel = FunnelPalette(
   header:        Color(0xFF13294A),
   surface:       Color(0xFF171B21),
@@ -79,7 +71,6 @@ const darkFunnel = FunnelPalette(
   headerFieldBg: Color(0x26FFFFFF),
 );
 
-/// Façade over the active [FunnelPalette]; mirrors [TransitColors].
 abstract final class FunnelColors {
   static FunnelPalette _p = lightFunnel;
 
@@ -101,20 +92,14 @@ abstract final class FunnelColors {
   static Color get onHeaderFaint => _p.onHeaderFaint;
   static Color get headerFieldBg => _p.headerFieldBg;
 
-  // Route-family identity colors — constant across themes.
-  // Tram / rail family (blue).
   static const tramBg     = Color(0xFFE6F1FB);
   static const tramFg     = Color(0xFF0C447C);
   static const tramAccent = Color(0xFF185FA5);
 
-  // Bus family (purple).
   static const busBg = Color(0xFFEEEDFE);
   static const busFg = Color(0xFF3C3489);
 }
 
-/// Visual style for a conveyance, derived from its GTFS `route_type` id.
-/// RouteTypeId: TRAM=0, SUBWAY=1, RAIL=2, BUS=3, FERRY=4, CABLE_CAR=5,
-/// GONDOLA=6, FUNICULAR=7.
 class ConveyanceStyle {
   final IconData icon;
   final Color bg;
@@ -157,7 +142,7 @@ ConveyanceStyle styleForType(int typeId) {
       return _tramStyle.copyIcon(Icons.directions_transit);
     case GtfsRouteType.tram:
       return _tramStyle;
-    case null: // extended / unknown route type
+    case null:
       return _tramStyle.copyIcon(Icons.directions_transit);
   }
 }
@@ -167,6 +152,5 @@ extension on ConveyanceStyle {
       ConveyanceStyle(icon: icon, bg: bg, fg: fg, accent: accent);
 }
 
-/// Readable foreground (black/white) for text drawn on [background].
 Color funnelOnColor(Color background) =>
     background.computeLuminance() > 0.5 ? FunnelColors.textPrimary : Colors.white;

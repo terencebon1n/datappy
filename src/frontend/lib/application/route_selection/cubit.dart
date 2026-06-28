@@ -33,8 +33,6 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
     _init();
   }
 
-  /// Load the city list and, if a previous selection was persisted, restore it
-  /// so the dashboard line card shows the last line immediately on launch.
   Future<void> _init() async {
     final saved = await _selectionStore.load();
     final cities = await _cityRepo.resolveCities();
@@ -52,10 +50,6 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
     ));
   }
 
-  /// Restore a previously saved selection (e.g. a tapped favorite) onto the
-  /// dashboard and persist it as the last selection so it survives a restart,
-  /// just like completing a fresh search. The caller is responsible for
-  /// (re)starting the live feed via [StopUpdateCubit.watchStopUpdates].
   Future<void> loadSelection(SavedSelection s) async {
     emit(state.copyWith(
       selectedCity: s.city,
@@ -67,11 +61,8 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
     await _selectionStore.save(s);
   }
 
-  /// The selection shown on the dashboard before a search was opened, kept so
-  /// it can be restored if the user backs out without choosing a new route.
   SavedSelection? _previousSelection;
 
-  /// Restart a fresh search at the city step, keeping the loaded city list.
   void reset() {
     emit(RouteSelectionState(
       status: state.status,
@@ -79,8 +70,6 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
     ));
   }
 
-  /// Open a fresh search from the dashboard, remembering the currently
-  /// committed selection so [cancelSearch] can restore it on a misclick / back.
   void beginSearch() {
     _previousSelection = state.canSubmit
         ? SavedSelection(
@@ -94,9 +83,6 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
     reset();
   }
 
-  /// Restore the selection that was showing before [beginSearch]. Called when
-  /// the funnel is dismissed without completing a new search; clears to empty
-  /// when there was no prior selection.
   void cancelSearch() {
     final prev = _previousSelection;
     emit(RouteSelectionState(
@@ -110,8 +96,6 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
     ));
   }
 
-  /// Go back one step, preserving already-loaded data.
-  /// Returns false when already at the first step (caller should pop the route).
   bool back() {
     final prev = switch (state.step) {
       FunnelStep.city => null,
@@ -161,8 +145,6 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
           ),
         );
         emit(state.copyWith(direction: directionData));
-        // Selection is now complete: persist it so it can be restored and
-        // reconnected on the next launch.
         await _selectionStore.save(SavedSelection(
           city: state.selectedCity!,
           conveyance: state.selectedConveyance!,
@@ -171,17 +153,11 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
           direction: directionData,
         ));
       } catch (e) {
-        // Resolution failed: clear the destination so the "resolving" overlay
-        // disappears and the user can pick another arrival stop.
         emit(_afterSource(state.sourceStop!));
       }
     }
   }
 
-  // --- State transitions -----------------------------------------------------
-  // Selecting at one level clears every selection downstream; each builder
-  // preserves only the data loaded by the steps above it. This avoids relying
-  // on copyWith, whose `?? this` semantics cannot null a field back out.
 
   RouteSelectionState _afterCity(City city) => RouteSelectionState(
         status: state.status,

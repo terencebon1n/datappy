@@ -23,10 +23,7 @@ import 'package:frontend/presentation/transit_dashboard.dart' show TransitDashbo
 
 Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
-    // One shared store instance so both cubits read/write the same blob.
     final selectionStore = await SharedPrefsSelectionStore.create();
-    // Theme preference: resolved synchronously below so the first frame already
-    // uses the right palette (no light-to-dark flash on launch).
     final themeStore = await SharedPrefsThemeStore.create();
     final initialThemeMode = themeStore.load() ?? ThemeMode.system;
     final favoritesStore = await SharedPrefsFavoritesStore.create();
@@ -65,9 +62,6 @@ Future<void> main() async {
             ],
             child: BlocBuilder<ThemeCubit, ThemeMode>(
                 builder: (context, mode) {
-                    // Push the active palette into the static façades, then build
-                    // MaterialApp; rebuilding it re-reads every TransitColors /
-                    // FunnelColors getter across the tree.
                     final isDark = resolveIsDark(mode);
                     TransitColors.apply(isDark);
                     FunnelColors.apply(isDark);

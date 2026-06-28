@@ -7,9 +7,6 @@ import 'package:frontend/domain/saved_selection.dart';
 import 'package:frontend/presentation/theme/colors.dart';
 import 'package:frontend/presentation/funnel/funnel_widgets.dart' show RouteBadge;
 
-/// The "Favoris" tab: a list of saved searches. Tapping one loads it back onto
-/// the dashboard (via [onSelect]); each can be removed by swiping or the trash
-/// button.
 class FavoritesPage extends StatelessWidget {
   const FavoritesPage({super.key, required this.onSelect});
 

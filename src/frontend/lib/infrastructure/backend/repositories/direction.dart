@@ -8,7 +8,6 @@ import 'package:frontend/domain/path.dart' show Path;
 import 'package:frontend/domain/repositories/i_direction.dart' show IDirectionRepository;
 
 
-
 class DirectionRepository implements IDirectionRepository {
   final String apiBase;
 

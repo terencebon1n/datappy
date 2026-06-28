@@ -3,9 +3,6 @@ import 'package:frontend/domain/conveyance.dart' show Conveyance;
 import 'package:frontend/domain/direction.dart' show Direction;
 
 
-/// A completed transit selection, persisted so it can be restored on the next
-/// launch or saved as a favorite. Bundles everything needed to (a) repaint the
-/// dashboard line card and (b) rebuild the websocket path.
 class SavedSelection {
     final City city;
     final Conveyance conveyance;
@@ -40,8 +37,6 @@ class SavedSelection {
         },
     };
 
-    /// Rebuilds a selection from its [toJson] map. Throws if a required field is
-    /// missing or mistyped; callers treat that as "no usable saved data".
     factory SavedSelection.fromJson(Map<String, dynamic> json) {
         final conveyance = json['conveyance'] as Map<String, dynamic>;
         final direction = json['direction'] as Map<String, dynamic>;
@@ -65,8 +60,6 @@ class SavedSelection {
         );
     }
 
-    /// Value equality over the identifying fields so the favorites list can
-    /// dedupe and toggle a selection regardless of object identity.
     @override
     bool operator ==(Object other) =>
         other is SavedSelection &&

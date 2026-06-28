@@ -11,11 +11,6 @@ import 'package:frontend/presentation/funnel/city_step.dart';
 import 'package:frontend/presentation/funnel/line_step.dart';
 import 'package:frontend/presentation/funnel/stop_step.dart';
 
-/// Full-screen search funnel: City -> Ligne -> Départ -> Arrivée.
-/// Reads the app-level [RouteSelectionCubit] / StopUpdateCubit provided above
-/// MaterialApp, so it needs no BlocProvider of its own. When the selection is
-/// complete (direction resolved) it starts the live feed and pops back to the
-/// dashboard automatically.
 class FunnelPage extends StatelessWidget {
   const FunnelPage({super.key});
 
@@ -30,10 +25,6 @@ class FunnelPage extends StatelessWidget {
       child: BlocListener<RouteSelectionCubit, RouteSelectionState>(
         listenWhen: (prev, curr) => !prev.canSubmit && curr.canSubmit,
         listener: (context, state) {
-          // Only act on a genuine in-funnel completion. cancelSearch() also
-          // flips canSubmit true while restoring the previous selection, but it
-          // runs after this route starts popping (no longer current) — acting
-          // on it here would pop the dashboard too and leave a black screen.
           if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
           context.read<StopUpdateCubit>().watchStopUpdates(
             TransitPath(
@@ -42,8 +33,6 @@ class FunnelPage extends StatelessWidget {
               direction: state.direction!,
             ),
           );
-          // Signal a completed search so the dashboard keeps the new selection
-          // instead of restoring the previous one.
           Navigator.of(context).pop(true);
         },
         child: Builder(

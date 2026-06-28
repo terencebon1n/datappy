@@ -6,7 +6,6 @@ import 'package:frontend/domain/saved_selection.dart' show SavedSelection;
 import 'package:frontend/domain/repositories/i_favorites_store.dart' show IFavoritesStore;
 
 
-/// Persists the favorites as a single JSON array in [SharedPreferences].
 class SharedPrefsFavoritesStore implements IFavoritesStore {
     static const String _key = 'favorites';
 
@@ -14,8 +13,6 @@ class SharedPrefsFavoritesStore implements IFavoritesStore {
 
     SharedPrefsFavoritesStore._(this._prefs);
 
-    /// Loads [SharedPreferences] once so the cubit can read/write synchronously
-    /// afterwards.
     static Future<SharedPrefsFavoritesStore> create() async =>
         SharedPrefsFavoritesStore._(await SharedPreferences.getInstance());
 
@@ -32,16 +29,13 @@ class SharedPrefsFavoritesStore implements IFavoritesStore {
             final favorites = <SavedSelection>[];
             for (final entry in list) {
                 try {
-                    favorites.add(
-                        SavedSelection.fromJson(entry as Map<String, dynamic>),
-                    );
+                    favorites.add(SavedSelection.fromJson(entry as Map<String, dynamic>));
                 } catch (_) {
-                    // Skip a single corrupt/schema-changed entry, keep the rest.
+                    continue;
                 }
             }
             return favorites;
         } catch (_) {
-            // Corrupt blob: treat as no saved favorites.
             return [];
         }
     }

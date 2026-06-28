@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart' show SharedPreferenc
 import 'package:frontend/domain/repositories/i_theme_store.dart' show IThemeStore;
 
 
-/// Persists the selected [ThemeMode] as a short string in [SharedPreferences].
 class SharedPrefsThemeStore implements IThemeStore {
     static const String _key = 'theme_mode';
 
@@ -12,8 +11,6 @@ class SharedPrefsThemeStore implements IThemeStore {
 
     SharedPrefsThemeStore._(this._prefs);
 
-    /// Loads [SharedPreferences] once so [load] can read synchronously, which
-    /// lets the app pick the right theme on the very first frame.
     static Future<SharedPrefsThemeStore> create() async =>
         SharedPrefsThemeStore._(await SharedPreferences.getInstance());
 

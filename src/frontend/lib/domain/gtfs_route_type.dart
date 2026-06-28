@@ -1,6 +1,3 @@
-/// GTFS `route_type` taxonomy (standard values 0-7), mirroring the backend
-/// `RouteTypeId`. Extended GTFS route types (e.g. 11, 12, 100+) resolve to
-/// `null` via [fromId] and are treated as a generic conveyance by the UI.
 enum GtfsRouteType {
   tram(0),
   subway(1),
