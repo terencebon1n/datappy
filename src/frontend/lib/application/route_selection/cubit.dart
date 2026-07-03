@@ -110,17 +110,14 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
 
   Future<void> selectCity(City city) async {
     emit(_afterCity(city));
-    final headers = {'City': city.name.toLowerCase()};
-    _conveyanceRepo.headers = headers;
-    _stopRepo.headers = headers;
-    _directionRepo.headers = headers;
-    final conveyances = await _conveyanceRepo.resolveConveyances();
+    final conveyances = await _conveyanceRepo.resolveConveyances(city);
     emit(state.copyWith(conveyances: conveyances));
   }
 
   Future<void> selectConveyance(Conveyance conveyance) async {
     emit(_afterConveyance(conveyance));
-    final stops = await _stopRepo.resolveStopNames(conveyance.id);
+    final stops =
+        await _stopRepo.resolveStopNames(conveyance.id, state.selectedCity!);
     emit(state.copyWith(stops: stops));
   }
 
@@ -143,6 +140,7 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
             stopNameOrigin: state.sourceStop!,
             stopNameDestination: state.destStop!,
           ),
+          state.selectedCity!,
         );
         emit(state.copyWith(direction: directionData));
         await _selectionStore.save(SavedSelection(

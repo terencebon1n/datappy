@@ -33,23 +33,32 @@ class FavoritesPage extends StatelessWidget {
           child: BlocBuilder<FavoritesCubit, List<SavedSelection>>(
             builder: (context, favorites) {
               if (favorites.isEmpty) return const _EmptyState();
-              return ListView.separated(
+              return ReorderableListView.builder(
                 padding: const EdgeInsets.fromLTRB(14, 4, 14, 100),
+                buildDefaultDragHandles: false,
                 itemCount: favorites.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                onReorder: (oldIndex, newIndex) =>
+                    context.read<FavoritesCubit>().reorder(oldIndex, newIndex),
                 itemBuilder: (context, i) {
                   final fav = favorites[i];
-                  return Dismissible(
-                    key: ValueKey(fav.hashCode),
-                    direction: DismissDirection.endToStart,
-                    background: const _DismissBackground(),
-                    onDismissed: (_) =>
-                        context.read<FavoritesCubit>().remove(fav),
-                    child: _FavoriteTile(
-                      favorite: fav,
-                      onTap: () => onSelect(fav),
-                      onDelete: () =>
-                          context.read<FavoritesCubit>().remove(fav),
+                  return ReorderableDelayedDragStartListener(
+                    key: ValueKey(fav),
+                    index: i,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Dismissible(
+                        key: ValueKey('dismiss-${fav.hashCode}'),
+                        direction: DismissDirection.endToStart,
+                        background: const _DismissBackground(),
+                        onDismissed: (_) =>
+                            context.read<FavoritesCubit>().remove(fav),
+                        child: _FavoriteTile(
+                          favorite: fav,
+                          onTap: () => onSelect(fav),
+                          onDelete: () =>
+                              context.read<FavoritesCubit>().remove(fav),
+                        ),
+                      ),
                     ),
                   );
                 },
