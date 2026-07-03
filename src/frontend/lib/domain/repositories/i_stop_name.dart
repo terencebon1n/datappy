@@ -1,5 +1,6 @@
-abstract class IStopNameRepository {
-    abstract Map<String, String> headers;
+import 'package:frontend/domain/city.dart' show City;
 
-    Future<List<String>> resolveStopNames(String routeId);
+
+abstract class IStopNameRepository {
+    Future<List<String>> resolveStopNames(String routeId, City city);
 }
