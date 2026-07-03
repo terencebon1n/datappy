@@ -1,42 +1,37 @@
 from dataclasses import dataclass
-from typing import List, Optional, Type
+from typing import List, Optional
 
-from src.domain.gtfs_rt.enums import (
-    AlertUrl,
-    City,
-    FeedType,
-    TripUpdateUrl,
-    VehiclePositionUrl,
-)
+from src.domain.gtfs_rt.enums import City, FeedType
+from src.infrastructure.config import CityFeedsModel, settings
 
 
 @dataclass(frozen=True)
 class ProducerTask:
     city: City
     feed_type: FeedType
-    url: AlertUrl | TripUpdateUrl | VehiclePositionUrl
+    url: str
 
 
 class ProducerRegistry:
-    _URL_MAPPING: dict[FeedType, Type] = {
-        FeedType.ALERT: AlertUrl,
-        FeedType.TRIP_UPDATE: TripUpdateUrl,
-        FeedType.VEHICLE_POSITION: VehiclePositionUrl,
-    }
+    @staticmethod
+    def _url_for(feeds: CityFeedsModel, feed_type: FeedType) -> Optional[str]:
+        match feed_type:
+            case FeedType.ALERT:
+                return feeds.alert
+            case FeedType.TRIP_UPDATE:
+                return feeds.trip_update
+            case FeedType.VEHICLE_POSITION:
+                return feeds.vehicle_position
 
     @classmethod
     def get_all_tasks(cls) -> List[ProducerTask]:
         tasks = []
-        for city in City:
-            for feed in FeedType:
-                url_enum = cls._URL_MAPPING.get(feed)
-                if url_enum and hasattr(url_enum, city.name):
+        for city, feeds in settings.feeds.items():
+            for feed_type in FeedType:
+                url = cls._url_for(feeds, feed_type)
+                if url:
                     tasks.append(
-                        ProducerTask(
-                            city=city,
-                            feed_type=feed,
-                            url=getattr(url_enum, city.name).value,
-                        )
+                        ProducerTask(city=city, feed_type=feed_type, url=url)
                     )
         return tasks
 

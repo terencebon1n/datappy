@@ -1,10 +1,13 @@
 import json
+import logging
 from typing import List
 
 from redis import Redis
 
 from src.domain.gtfs_rt.enums import City
 from src.domain.gtfs_rt.stop_update import StopUpdate
+
+logger = logging.getLogger(__name__)
 
 
 class StopUpdateRepository:
@@ -30,6 +33,6 @@ class StopUpdateRepository:
             try:
                 stop_updates.append(StopUpdate.model_validate(json.loads(value)))
             except (json.JSONDecodeError, ValueError) as e:
-                print(e)
+                logger.warning(f"Skipping malformed stop update in {key}: {e}")
                 continue
         return stop_updates

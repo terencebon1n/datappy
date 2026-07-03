@@ -1,14 +1,19 @@
 from sqlalchemy.schema import CreateSchema
 
 from src.application.services.populate.gtfs_loader import GTFSLoaderService
-from src.domain.gtfs.enums import GTFSCityUrls
 from src.domain.gtfs_rt.enums import City
+from src.infrastructure.config import settings
 from src.infrastructure.database.postgres.base import GTFSModelBase
 from src.infrastructure.database.postgres.manager import PostgresDatabaseManager
+from src.infrastructure.external.gtfs_zip_reader import GTFSZipReader
 
 
 class PopulateService:
     async def start(self, city: City) -> None:
+        feeds = settings.feeds.get(city)
+        if feeds is None:
+            raise ValueError(f"No feed configuration for city: {city}")
+
         db_manager = PostgresDatabaseManager(is_async=False)
         db_manager.initialize()
         db_manager.set_schema(city)
@@ -20,7 +25,7 @@ class PopulateService:
 
         GTFSModelBase.metadata.create_all(db_manager.engine)
 
-        gtfs_loader = GTFSLoaderService(db_manager.session)
-        gtfs_loader.perform_import(GTFSCityUrls[city.name])
+        with GTFSZipReader(feeds.gtfs_schedule) as source:
+            GTFSLoaderService(db_manager.session, source).perform_import()
 
         await db_manager.close()

@@ -8,11 +8,11 @@ from typing import Generator, Optional, Type
 
 import requests
 
-from src.domain.gtfs.enums import GTFSCityUrls, GTFSFileNames
+from src.domain.gtfs.enums import GTFSFileNames
 
 
 class GTFSZipReader:
-    def __init__(self, url: GTFSCityUrls) -> None:
+    def __init__(self, url: str) -> None:
         self.url = url
         self.zip_file: zipfile.ZipFile | None = None
 
@@ -31,6 +31,9 @@ class GTFSZipReader:
     ) -> None:
         if self.zip_file:
             self.zip_file.close()
+
+    def contains(self, filename: GTFSFileNames) -> bool:
+        return self.zip_file is not None and filename in self.zip_file.namelist()
 
     def stream_csv(self, filename: GTFSFileNames) -> Generator[dict, None, None]:
         """Streams rows from a specific CSV inside the ZIP as dictionaries."""

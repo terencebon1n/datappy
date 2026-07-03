@@ -1,3 +1,4 @@
+import logging
 import sys
 
 from src.application.services.api import ApiService
@@ -10,6 +11,11 @@ from src.application.services.registry import ServiceRegistry
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s:\t  %(message)s",
+    )
+
     registry = ServiceRegistry()
     registry.register(ServiceCommand.API, lambda: ApiService())
     registry.register(ServiceCommand.POPULATE, lambda: PopulateService())
