@@ -4,11 +4,6 @@ from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 
 from src.infrastructure.config import settings
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s:\t  %(message)s",
-)
-
 logger = logging.getLogger(__name__)
 
 

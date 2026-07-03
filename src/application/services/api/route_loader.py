@@ -1,20 +1,16 @@
-from typing import Sequence
-
-from sqlalchemy import Row
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
+from typing import Any, Sequence
 
 from src.application.dto.route import ConveyanceDTO
+from src.application.ports import ConveyanceReader
 from src.domain.enums import RouteTypeId, RouteTypeName
-from src.infrastructure.database.postgres.repositories.route import RouteRepository
 
 
 class RouteLoaderService:
-    def __init__(self, session: Session | AsyncSession) -> None:
-        self.route_repository = RouteRepository(session)
+    def __init__(self, route_repository: ConveyanceReader) -> None:
+        self.route_repository = route_repository
 
     async def get_conveyances(self) -> list[ConveyanceDTO]:
-        rconveyances: Sequence[Row] = await self.route_repository.get_conveyances()
+        rconveyances: Sequence[Any] = await self.route_repository.get_conveyances()
         return [
             ConveyanceDTO(
                 id=rconveyance.id,

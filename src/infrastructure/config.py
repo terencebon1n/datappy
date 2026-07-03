@@ -8,6 +8,8 @@ from pydantic import BaseModel, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
+from src.domain.gtfs_rt.enums import City
+
 
 class PostgresConfigModel(BaseModel):
     pool_size: int
@@ -51,11 +53,41 @@ class AdminModel(BaseModel):
     google: GoogleOAuthModel
 
 
+class CityFeedsModel(BaseModel):
+    gtfs_schedule: str
+    trip_update: str | None = None
+    vehicle_position: str | None = None
+    alert: str | None = None
+
+
+_DEFAULT_FEEDS: dict[City, CityFeedsModel] = {
+    City.MONTPELLIER: CityFeedsModel(
+        gtfs_schedule="https://gtfsproxy.e-tam.fr/URB/GTFS.zip",
+        trip_update="https://gtfsproxy.e-tam.fr/URB/TripUpdate.pb",
+        vehicle_position="https://gtfsproxy.e-tam.fr/URB/VehiclePosition.pb",
+        alert="https://gtfsproxy.e-tam.fr/URB/Alert.pb",
+    ),
+    City.BORDEAUX: CityFeedsModel(
+        gtfs_schedule="https://bdx.mecatran.com/utw/ws/gtfsfeed/static/bordeaux?apiKey=opendata-bordeaux-metropole-flux-gtfs-rt",
+        trip_update="https://bdx.mecatran.com/utw/ws/gtfsfeed/realtime/bordeaux?apiKey=opendata-bordeaux-metropole-flux-gtfs-rt",
+        vehicle_position="https://bdx.mecatran.com/utw/ws/gtfsfeed/vehicles/bordeaux?apiKey=opendata-bordeaux-metropole-flux-gtfs-rt",
+        alert="https://bdx.mecatran.com/utw/ws/gtfsfeed/alerts/bordeaux?apiKey=opendata-bordeaux-metropole-flux-gtfs-rt",
+    ),
+    City.TOULOUSE: CityFeedsModel(
+        gtfs_schedule="https://data.toulouse-metropole.fr/explore/dataset/tisseo-gtfs/files/fc1dda89077cf37e4f7521760e0ef4e9/download/",
+        trip_update="https://api.tisseo.fr/opendata/gtfsrt/GtfsRt.pb",
+        vehicle_position="https://api.tisseo.fr/opendata/gtfsrt/GtfsRt.pb",
+        alert="https://api.tisseo.fr/opendata/gtfsrt/GtfsRt.pb",
+    ),
+}
+
+
 class Settings(BaseSettings):
     postgres: PostgresModel
     kafka: KafkaModel
     redis: RedisModel
     admin: AdminModel
+    feeds: dict[City, CityFeedsModel] = _DEFAULT_FEEDS
 
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",

@@ -1,24 +1,19 @@
 from datetime import datetime, timezone
 from typing import List
 
-from redis import Redis
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-
 from src.application.dto.stop import TransitPathDTO
+from src.application.ports import ReachableTripReader, StopUpdateReader
 from src.domain.gtfs_rt.stop_update import StopUpdate
-from src.infrastructure.database.postgres.repositories.stop_time import (
-    StopTimeRepository,
-)
-from src.infrastructure.database.redis.repositories.stop_update import (
-    StopUpdateRepository,
-)
 
 
 class StopUpdateFeed:
-    def __init__(self, redis: Redis, session: Session | AsyncSession) -> None:
-        self.stop_update_repository = StopUpdateRepository(redis)
-        self.stop_time_repository = StopTimeRepository(session)
+    def __init__(
+        self,
+        stop_update_repository: StopUpdateReader,
+        stop_time_repository: ReachableTripReader,
+    ) -> None:
+        self.stop_update_repository = stop_update_repository
+        self.stop_time_repository = stop_time_repository
 
     async def get_updates(self, transit: TransitPathDTO) -> List[StopUpdate]:
         stop_updates: List[

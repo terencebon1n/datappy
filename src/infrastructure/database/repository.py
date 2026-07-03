@@ -1,6 +1,6 @@
 import logging
 from itertools import islice
-from typing import Iterable, Type, TypeVar
+from typing import Iterable
 
 from pydantic import BaseModel
 from sqlalchemy import Result, Select
@@ -10,60 +10,51 @@ from sqlalchemy.orm import Session
 
 from .postgres.base import GTFSModelBase
 
-TDomain = TypeVar("TDomain", bound=BaseModel)
-TModel = TypeVar("TModel", bound=GTFSModelBase)
-
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s:\t  %(message)s",
-)
-
 logger = logging.getLogger(__name__)
 
 
-class BaseRepository[TDomain, TModel]:
-    domain: Type[TDomain]
-    model: Type[TModel]
+class AsyncQueryRepository[TModel: GTFSModelBase]:
+    model: type[TModel]
 
-    def __init__(
-        self,
-        session: Session | AsyncSession,
-    ) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
     async def execute_select(self, select_query: Select) -> Result:
-        if isinstance(self.session, AsyncSession):
-            result = await self.session.execute(select_query)
-        elif isinstance(self.session, Session):
-            result = self.session.execute(select_query)
-        else:
-            raise Exception("Unknown session type")
+        return await self.session.execute(select_query)
 
-        return result
 
-    def bulk_add(self, generator: Iterable[dict], batch_size: int = 2000) -> None:
-        i = 0
+class BulkIngestRepository:
+    def __init__(
+        self,
+        session: Session,
+        domain: type[BaseModel],
+        model: type[GTFSModelBase],
+    ) -> None:
+        self.session = session
+        self.domain = domain
+        self.model = model
+
+    def bulk_add(self, rows: Iterable[dict], batch_size: int = 2000) -> None:
+        iterator = iter(rows)
+        total = 0
         while True:
-            batch_raw = list(islice(generator, batch_size))
+            batch_raw = list(islice(iterator, batch_size))
             if not batch_raw:
                 break
             mappings = []
             for row in batch_raw:
                 try:
-                    domain: TDomain = self.domain(**row)
-                    mappings.append(domain.model_dump())
-                except Exception as e:
-                    print(row)
-                    raise e
+                    domain = self.domain(**row)
+                except Exception:
+                    logger.error(
+                        f"Invalid row for {self.model.__tablename__}: {row}"
+                    )
+                    raise
+                mappings.append(domain.model_dump())
 
             self.session.execute(
                 insert(self.model).values(mappings).on_conflict_do_nothing()
             )
-            self.session.commit()
 
-            logger.info(
-                f"Inserted {(i * batch_size) + len(mappings)} rows into {self.model.__tablename__}"
-            )
-
-            i += 1
+            total += len(mappings)
+            logger.info(f"Inserted {total} rows into {self.model.__tablename__}")

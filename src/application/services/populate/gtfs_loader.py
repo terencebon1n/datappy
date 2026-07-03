@@ -1,28 +1,25 @@
 from sqlalchemy.orm import Session
 
-from src.domain.gtfs.enums import GTFSCityUrls
+from src.application.ports import GTFSScheduleSource
 from src.infrastructure.database.postgres.repositories.registry import (
     RepositoryRegistry,
 )
-from src.infrastructure.external.gtfs_zip_reader import GTFSZipReader
 
 
 class GTFSLoaderService:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, source: GTFSScheduleSource) -> None:
         self.session = session
+        self.source = source
 
-    def perform_import(self, url: GTFSCityUrls) -> None:
-        with GTFSZipReader(url) as reader:
-            for file_type in RepositoryRegistry.supported_files():
-                # Check if the file exists in the ZIP
-                if not reader.zip_file or file_type not in reader.zip_file.namelist():
-                    continue
+    def perform_import(self) -> None:
+        for file_type in RepositoryRegistry.supported_files():
+            if not self.source.contains(file_type):
+                continue
 
-                # Get the initialized repository from the Registry
-                repository = RepositoryRegistry.get_repository_for_file(
-                    file_type, self.session
-                )
+            repository = RepositoryRegistry.get_repository_for_file(
+                file_type, self.session
+            )
 
-                # Stream and process
-                raw_rows = reader.stream_csv(file_type)
-                repository.bulk_add(raw_rows)
+            raw_rows = self.source.stream_csv(file_type)
+            repository.bulk_add(raw_rows)
+            self.session.commit()

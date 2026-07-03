@@ -1,10 +1,10 @@
+from src.application.ports import ProcessAdapter
 from src.domain.admin.process import ManagedProcess, ManagedServiceType
 from src.domain.gtfs_rt.enums import City
-from src.infrastructure.docker.adapter import DockerProcessAdapter
 
 
 class ProcessManagerService:
-    def __init__(self, adapter: DockerProcessAdapter) -> None:
+    def __init__(self, adapter: ProcessAdapter) -> None:
         self._adapter = adapter
 
     def start(self, service: ManagedServiceType, city: City) -> ManagedProcess:

@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,7 +10,7 @@ from src.api.v1.endpoints.transit import basic_router, gtfs_router, gtfs_rt_rout
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     async_db_manager.initialize()
     yield
     await async_db_manager.close()

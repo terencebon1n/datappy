@@ -1,20 +1,14 @@
 from sqlalchemy import and_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import aliased
 
-from src.domain.gtfs.trip import Trip
 from src.infrastructure.database.postgres.models.stop import StopModel
 from src.infrastructure.database.postgres.models.stop_time import StopTimeModel
 from src.infrastructure.database.postgres.models.trip import TripModel
-from src.infrastructure.database.repository import BaseRepository
+from src.infrastructure.database.repository import AsyncQueryRepository
 
 
-class TripRepository(BaseRepository[Trip, TripModel]):
-    domain = Trip
+class TripRepository(AsyncQueryRepository[TripModel]):
     model = TripModel
-
-    def __init__(self, session: Session | AsyncSession) -> None:
-        super().__init__(session)
 
     async def get_direction(
         self,
