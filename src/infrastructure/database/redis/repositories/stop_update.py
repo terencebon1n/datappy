@@ -21,7 +21,7 @@ class StopUpdateRepository:
         direction_id: int,
         stop_id: str,
     ) -> List[StopUpdate]:
-        key = f"{city}:{route_id}:{direction_id}:{stop_id}"
+        key = f"{city}|{route_id}|{direction_id}|{stop_id}"
 
         data = self.redis.hgetall(key)
 

@@ -32,7 +32,7 @@ class QuixStreamsStopUpdateStream:
         sdf["stop_id"] = sdf.apply(lambda col: col["stop_time"]["id"])
         sdf["group_id"] = sdf.apply(
             lambda col: (
-                f"{self.city}:{col['route_id']}:{col['direction_id']}:{col['stop_id']}:{col['trip_id']}"
+                f"{self.city}|{col['route_id']}|{col['direction_id']}|{col['stop_id']}|{col['trip_id']}"
             )
         )
 

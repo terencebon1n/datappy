@@ -45,7 +45,7 @@ class RedisHsetStopUpdateSink(BatchingSink):
         with self._client.pipeline(transaction=True) as pipe:
             for item in batch:
                 value = item.value
-                hash_key = f"{self._city}:{value['route_id']}:{value['direction_id']}:{value['stop_id']}"
+                hash_key = f"{self._city}|{value['route_id']}|{value['direction_id']}|{value['stop_id']}"
                 field = value["trip_id"]
                 pipe.hset(hash_key, field, json.dumps(value))
                 pipe.expire(hash_key, self._ttl)
