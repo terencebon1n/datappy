@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from src.domain.gtfs_rt.enums import City
 
@@ -13,10 +13,3 @@ class TransitPathDTO(BaseModel):
     direction_id: int = Field(description="Direction ID")
     stop_id__origin: str = Field(description="Stop ID Origin")
     stop_id__destination: str = Field(description="Stop ID Destination")
-
-    @field_validator(
-        "route_id", "stop_id__origin", "stop_id__destination", mode="before"
-    )
-    @classmethod
-    def validate_id(cls, v: str) -> str:
-        return v.replace(":", "_")
