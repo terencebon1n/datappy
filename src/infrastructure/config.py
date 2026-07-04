@@ -50,6 +50,8 @@ class AdminModel(BaseModel):
     docker_network: str
     docker_host: str = "unix:///var/run/docker.sock"
     frontend_url: str = "http://localhost:8001"
+    status_poll_interval_seconds: int = 5
+    status_keepalive_seconds: int = 25
     google: GoogleOAuthModel
 
 

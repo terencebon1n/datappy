@@ -69,11 +69,11 @@
     </main>
     <script>
         const API = `${window.location.protocol}//api.datappy.fr`;
+        const WS = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//api.datappy.fr`;
 
-        async function fetchStatus() {
-            const res = await fetch(`${API}/admin/status`, { credentials: 'include' });
-            if (res.status === 401) { window.location.href = `${API}/admin/login`; return; }
-            const services = await res.json();
+        let socket = null;
+
+        function render(services) {
             document.getElementById('tbody').innerHTML = services.map(s => `
                 <tr>
                     <td class="city">${s.city}</td>
@@ -92,9 +92,22 @@
             document.getElementById('last-updated').textContent = `Refreshed at ${new Date().toLocaleTimeString()}`;
         }
 
+        function connectStatus() {
+            socket = new WebSocket(`${WS}/admin/status`);
+            socket.onmessage = (event) => render(JSON.parse(event.data));
+            socket.onclose = (event) => {
+                socket = null;
+                if (event.code === 1008) {
+                    window.location.href = `${API}/admin/login`;
+                } else {
+                    setTimeout(connectStatus, 3000);
+                }
+            };
+        }
+
         async function action(type, service, city) {
             await fetch(`${API}/admin/${service}/${city}/${type}`, { method: 'POST', credentials: 'include' });
-            fetchStatus();
+            if (socket && socket.readyState === WebSocket.OPEN) socket.send('refresh');
         }
 
         async function logout() {
@@ -102,8 +115,7 @@
             window.location.href = `${API}/admin/login`;
         }
 
-        fetchStatus();
-        setInterval(fetchStatus, 5000);
+        connectStatus();
     </script>
 </body>
 </html>
