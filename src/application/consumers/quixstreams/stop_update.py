@@ -6,7 +6,7 @@ from typing import Optional, Type
 from quixstreams.dataframe import StreamingDataFrame
 from quixstreams.sinks import BaseSink
 
-from src.domain.gtfs_rt.enums import City
+from src.domain.gtfs_rt.enums import City, FeedType
 from src.infrastructure.processing.quixstreams.consumer import (
     QuixStreamsConsumerAdapter,
 )
@@ -24,7 +24,7 @@ class QuixStreamsStopUpdateStream:
         self._sink = sink
 
     def _process_dataframe(self) -> StreamingDataFrame:
-        sdf = self.quix_adapter.stream("TripUpdate")
+        sdf = self.quix_adapter.stream(FeedType.TRIP_UPDATE.topic(self.city))
 
         sdf["trip_id"] = sdf.apply(lambda col: col["trip"]["id"])
         sdf["route_id"] = sdf.apply(lambda col: col["trip"]["route_id"])

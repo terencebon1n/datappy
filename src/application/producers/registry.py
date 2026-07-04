@@ -30,9 +30,7 @@ class ProducerRegistry:
             for feed_type in FeedType:
                 url = cls._url_for(feeds, feed_type)
                 if url:
-                    tasks.append(
-                        ProducerTask(city=city, feed_type=feed_type, url=url)
-                    )
+                    tasks.append(ProducerTask(city=city, feed_type=feed_type, url=url))
         return tasks
 
     @classmethod

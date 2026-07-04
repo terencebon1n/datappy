@@ -1,13 +1,16 @@
 from enum import StrEnum
 
 
+class City(StrEnum):
+    MONTPELLIER = "montpellier"
+    BORDEAUX = "bordeaux"
+    TOULOUSE = "toulouse"
+
+
 class FeedType(StrEnum):
     TRIP_UPDATE = "TripUpdate"
     VEHICLE_POSITION = "VehiclePosition"
     ALERT = "Alert"
 
-
-class City(StrEnum):
-    MONTPELLIER = "montpellier"
-    BORDEAUX = "bordeaux"
-    TOULOUSE = "toulouse"
+    def topic(self, city: City) -> str:
+        return f"{city}.{self.value}"

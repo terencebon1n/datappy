@@ -46,9 +46,7 @@ class BulkIngestRepository:
                 try:
                     domain = self.domain(**row)
                 except Exception:
-                    logger.error(
-                        f"Invalid row for {self.model.__tablename__}: {row}"
-                    )
+                    logger.error(f"Invalid row for {self.model.__tablename__}: {row}")
                     raise
                 mappings.append(domain.model_dump())
 

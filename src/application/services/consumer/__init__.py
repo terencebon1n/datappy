@@ -11,7 +11,7 @@ from src.infrastructure.processing.quixstreams.consumer import (
 
 class QuixStreamsConsumerService:
     def start(self, city: City) -> None:
-        quix = QuixStreamsConsumerAdapter()
+        quix = QuixStreamsConsumerAdapter(consumer_group=f"stop-update-{city}")
         sink = RedisHsetStopUpdateSink(
             city=city,
             host=settings.redis.host,

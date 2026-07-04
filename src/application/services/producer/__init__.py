@@ -21,7 +21,7 @@ class ProducerService:
         gateway = TripUpdateGateway()
         service = TripIngestorService(gateway, kafka)
 
-        await admin.ensure_topics([f.value for f in FeedType])
+        await admin.ensure_topics([f.topic(city) for f in FeedType])
 
         await kafka.start()
 

@@ -6,8 +6,11 @@ from src.infrastructure.config import settings
 
 
 class QuixStreamsConsumerAdapter:
-    def __init__(self) -> None:
-        self.app = Application(broker_address=settings.kafka.brokers)
+    def __init__(self, consumer_group: str) -> None:
+        self.app = Application(
+            broker_address=settings.kafka.brokers,
+            consumer_group=consumer_group,
+        )
 
     def stream(self, topic: str) -> StreamingDataFrame:
         input_topic: Topic = self.app.topic(topic)

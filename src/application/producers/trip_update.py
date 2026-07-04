@@ -1,6 +1,5 @@
 from src.application.ports import MessageProducer, TripUpdateSource
 from src.application.producers.registry import ProducerTask
-from src.domain.gtfs_rt.enums import FeedType
 from src.domain.gtfs_rt.trip_update import MinimizedTripUpdate, TripUpdate
 
 
@@ -8,7 +7,6 @@ class TripIngestorService:
     def __init__(self, client: TripUpdateSource, producer: MessageProducer) -> None:
         self.client = client
         self.producer = producer
-        self.topic = FeedType.TRIP_UPDATE.value
 
     async def run(self, task: ProducerTask) -> None:
         raw_data = await self.client.fetch_rt(task.url)
@@ -23,7 +21,7 @@ class TripIngestorService:
                 key = f"{event.trip.route_id}_{event.trip.direction_id}_{stop_time.id}"
 
                 await self.producer.send(
-                    topic=self.topic,
+                    topic=task.feed_type.topic(task.city),
                     key=key,
                     value=minimized.model_dump_json().encode("utf-8"),
                 )

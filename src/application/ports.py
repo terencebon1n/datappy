@@ -44,7 +44,9 @@ class MessageProducer(Protocol):
 
 
 class ProcessAdapter(Protocol):
-    def run_service(self, service: ManagedServiceType, city: City) -> ManagedProcess: ...
+    def run_service(
+        self, service: ManagedServiceType, city: City
+    ) -> ManagedProcess: ...
 
     def stop_service(self, service: ManagedServiceType, city: City) -> None: ...
 
