@@ -67,6 +67,7 @@ Future<void> main() async {
                     FunnelColors.apply(isDark);
 
                     return MaterialApp(
+                        title: 'Datappy',
                         debugShowCheckedModeBanner: false,
                         themeMode: mode,
                         theme: ThemeData(brightness: Brightness.light),
