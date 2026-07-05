@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class Agency(BaseModel):
-    id: str = Field(alias="agency_id")
+    id: Optional[str] = Field(alias="agency_id", default=None)
     name: str = Field(alias="agency_name")
     url: Optional[str] = Field(alias="agency_url", default=None)
     timezone: str = Field(alias="agency_timezone")

@@ -5,6 +5,7 @@ class City(StrEnum):
     MONTPELLIER = "montpellier"
     BORDEAUX = "bordeaux"
     TOULOUSE = "toulouse"
+    NIMES = "nimes"
 
 
 class FeedType(StrEnum):

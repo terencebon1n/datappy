@@ -11,7 +11,7 @@ class RouteModel(GTFSModelBase):
     __tablename__ = "route"
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
-    agency_id: Mapped[str] = mapped_column(String, ForeignKey(AgencyModel.id))
+    agency_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey(AgencyModel.id))
     short_name: Mapped[str] = mapped_column(String)
     long_name: Mapped[str] = mapped_column(String)
     description: Mapped[Optional[str]] = mapped_column(String)

@@ -26,6 +26,6 @@ class PopulateService:
         GTFSModelBase.metadata.create_all(db_manager.engine)
 
         with GTFSZipReader(feeds.gtfs_schedule) as source:
-            GTFSLoaderService(db_manager.session, source).perform_import()
+            GTFSLoaderService(db_manager.session, source, city).perform_import()
 
         await db_manager.close()

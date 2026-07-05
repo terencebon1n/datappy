@@ -34,7 +34,12 @@ class BulkIngestRepository:
         self.domain = domain
         self.model = model
 
-    def bulk_add(self, rows: Iterable[dict], batch_size: int = 2000) -> None:
+    def bulk_add(
+        self,
+        rows: Iterable[dict],
+        batch_size: int = 2000,
+        defaults: dict | None = None,
+    ) -> None:
         iterator = iter(rows)
         total = 0
         while True:
@@ -43,6 +48,8 @@ class BulkIngestRepository:
                 break
             mappings = []
             for row in batch_raw:
+                if defaults:
+                    row = {**defaults, **row}
                 try:
                     domain = self.domain(**row)
                 except Exception:

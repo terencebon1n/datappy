@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class Route(BaseModel):
     id: str = Field(alias="route_id")
-    agency_id: str = Field(alias="agency_id")
+    agency_id: Optional[str] = Field(alias="agency_id", default=None)
     short_name: str = Field(alias="route_short_name")
     long_name: str = Field(alias="route_long_name")
     description: Optional[str] = Field(alias="route_desc", default=None)

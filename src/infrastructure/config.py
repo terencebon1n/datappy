@@ -81,6 +81,12 @@ _DEFAULT_FEEDS: dict[City, CityFeedsModel] = {
         vehicle_position="https://api.tisseo.fr/opendata/gtfsrt/GtfsRt.pb",
         alert="https://api.tisseo.fr/opendata/gtfsrt/GtfsRt.pb",
     ),
+    City.NIMES: CityFeedsModel(
+        gtfs_schedule="https://www.data.gouv.fr/api/1/datasets/r/15aeb8a5-1cca-4bb9-ae5f-b6e67e4ff2ab",
+        trip_update="https://transport.data.gouv.fr/resources/80731/download",
+        vehicle_position="https://transport.data.gouv.fr/resources/80732/download",
+        alert="https://transport.data.gouv.fr/resources/80730/download",
+    ),
 }
 
 

@@ -1,15 +1,20 @@
 from sqlalchemy.orm import Session
 
 from src.application.ports import GTFSScheduleSource
+from src.domain.gtfs.enums import GTFSFileNames
+from src.domain.gtfs_rt.enums import City
 from src.infrastructure.database.postgres.repositories.registry import (
     RepositoryRegistry,
 )
 
 
 class GTFSLoaderService:
-    def __init__(self, session: Session, source: GTFSScheduleSource) -> None:
+    def __init__(
+        self, session: Session, source: GTFSScheduleSource, city: City
+    ) -> None:
         self.session = session
         self.source = source
+        self.city = city
 
     def perform_import(self) -> None:
         for file_type in RepositoryRegistry.supported_files():
@@ -21,5 +26,10 @@ class GTFSLoaderService:
             )
 
             raw_rows = self.source.stream_csv(file_type)
-            repository.bulk_add(raw_rows)
+            repository.bulk_add(raw_rows, defaults=self._defaults_for(file_type))
             self.session.commit()
+
+    def _defaults_for(self, file_type: GTFSFileNames) -> dict | None:
+        if file_type == GTFSFileNames.AGENCY:
+            return {"agency_id": str(self.city)}
+        return None
