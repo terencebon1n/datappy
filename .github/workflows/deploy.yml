@@ -24,6 +24,7 @@ jobs:
           docker compose pull
           docker compose up -d --build --remove-orphans
           docker image prune -f
+          docker builder prune -f --keep-storage=3GB
 
       - name: Health check
         run: |

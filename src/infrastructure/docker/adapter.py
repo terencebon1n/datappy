@@ -3,6 +3,7 @@ from enum import StrEnum
 from typing import Any
 
 from docker.errors import NotFound
+from docker.types import LogConfig
 
 import docker
 from src.domain.admin.process import ManagedProcess, ManagedServiceType, ProcessStatus
@@ -68,6 +69,10 @@ class DockerProcessAdapter:
             detach=True,
             restart_policy=DockerRestartPolicy.ON_FAILURE.config(max_retries=5),
             network=self._network,
+            log_config=LogConfig(
+                type=LogConfig.types.JSON,
+                config={"max-size": "20m", "max-file": "3"},
+            ),
         )
         logger.info(f"Started container {name}")
         return ManagedProcess(

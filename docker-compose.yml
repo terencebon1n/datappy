@@ -1,9 +1,16 @@
 version: "3"
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "3"
+
 services:
   datappy:
     build: .
     container_name: datappy
+    logging: *default-logging
     depends_on:
       - postgres
       - kafka-broker
@@ -20,6 +27,7 @@ services:
     image: postgres:17
     container_name: postgres
     restart: always
+    logging: *default-logging
     environment:
       POSTGRES_PASSWORD: postgres
     healthcheck:
@@ -30,17 +38,18 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - pgdata:/var/lib/postgresql/datappy-data
+      - pgdata:/var/lib/postgresql/data
     networks:
       - schedule-net
 
   kafka-broker:
     image: apache/kafka:latest
     container_name: broker
+    logging: *default-logging
     networks:
       - realtime-net
     ports:
-      - "9092:9092" 
+      - "9092:9092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -52,11 +61,17 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:9093
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # Realtime data is consumed immediately: keep at most 24h / 1GB per
+      # partition, with small segments so deletion actually triggers.
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG_SEGMENT_BYTES: 134217728
 
   redis:
     image: redis:7-alpine
     container_name: redis
     restart: always
+    logging: *default-logging
     ports:
       - "6379:6379"
     networks:
@@ -72,6 +87,7 @@ services:
       context: .
       dockerfile: docker/admin-frontend/Dockerfile
     container_name: datappy_admin_frontend
+    logging: *default-logging
     ports:
       - "8001:80"
 
