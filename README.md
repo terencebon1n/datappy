@@ -1,69 +1,149 @@
-# 🚌 Datappy : Application Mobile d'Affichage Temps Réel
+# 🚌 Datappy — Affichage Temps Réel des Transports en Commun
 
-**Datappy** est un projet visant à fournir une **application mobile** permettant aux utilisateurs de visualiser le trafic en temps réel des transports en commun. Nous exploitons les flux de données **GTFS-RT (General Transit Feed Specification - Realtime)**.
-## 🎯 Objectif du Projet
+**Datappy** fournit une **application mobile** permettant de visualiser, à la manière des panneaux d'affichage physiques, les **prochains départs en temps réel** d'un arrêt de transport en commun. Le projet exploite les flux **GTFS** (statique) et **GTFS-RT** (temps réel) publiés sur [transport.data.gouv.fr](https://transport.data.gouv.fr).
 
-L'objectif principal est de développer une application mobile offrant :
+## 🎯 Objectif
 
-* **Affichage de Panneaux Numériques :** Visualisation des prochains départs pour un arrêt donné, à la manière des panneaux d'affichage physiques.
+* **Panneaux d'affichage numériques** : visualisation des prochains départs pour un arrêt et une direction donnés.
+* **Temps réel** : les départs sont mis à jour en direct via WebSocket, à partir des flux GTFS-RT des réseaux.
+* **Départs planifiés** : lorsqu'aucune donnée temps réel n'est disponible, l'horaire théorique (GTFS statique) prend le relais.
 
-## ⚙️ Architecture Technique 
+## ✨ Fonctionnalités
+
+* 🔴 Départs temps réel poussés en direct (WebSocket) et repli sur l'horaire planifié.
+* ⭐ Favoris avec réordonnancement par glisser-déposer, persistance de la dernière recherche.
+* 🌙 Mode sombre.
+* 🏙️ Multi-villes : **Montpellier**, **Bordeaux**, **Toulouse**, **Nîmes**.
+* 🛠️ **Interface d'administration** (protégée par Google OAuth) pour démarrer/arrêter les producteurs et consommateurs temps réel par ville et suivre leur statut en direct.
+
+## ⚙️ Architecture Technique
 
 ![Datappy Architecture](./datappy.png)
 
-## ⚙️ Stack Technique
+Le backend suit une architecture **DDD** (Domain-Driven Design) et les principes **SOLID**, organisée en couches :
 
-Bien que le produit final soit une application mobile, le cœur de la gestion et du traitement des données GTFS-RT reste un **backend performant** pour alimenter l'application.
+| Couche | Contenu |
+| :--- | :--- |
+| `src/domain` | Entités et règles métier (GTFS, GTFS-RT, admin), sans dépendance technique. |
+| `src/application` | Services applicatifs (`api`, `populate`, `producer`, `consumer`, `diagram`, `admin`), producteurs, consommateurs et DTO. |
+| `src/infrastructure` | Adaptateurs techniques : PostgreSQL (SQLAlchemy), Redis, Kafka, QuixStreams, Docker, OAuth Google, lecture des flux GTFS/GTFS-RT. |
+| `src/api` | Exposition HTTP/WebSocket via FastAPI (routeurs et endpoints v1). |
+| `src/frontend` | Application mobile **Flutter** + interface web d'administration (Nginx). |
 
-| Composant | Technologie | Rôle Principal |
+### Flux de données
+
+```
+GTFS Schedule (.zip)  ──▶  populate  ──▶  PostgreSQL (schéma par ville)  ──┐
+                                                                          ├──▶  FastAPI  ──▶  WebSocket  ──▶  App Flutter
+GTFS-RT (.pb)  ──▶  producer  ──▶  Kafka  ──▶  consumer (QuixStreams)  ──▶  Redis  ──┘
+```
+
+* **`populate`** télécharge le GTFS statique et le charge dans PostgreSQL (un schéma dédié par ville).
+* **`producer`** récupère les flux GTFS-RT et les publie dans Kafka.
+* **`consumer`** traite le flux en continu (QuixStreams) et écrit l'état temps réel dans Redis.
+* **`api`** sert les données statiques (PostgreSQL) et temps réel (Redis) à l'application.
+
+## 🧰 Stack Technique
+
+| Composant | Technologie | Rôle |
 | :--- | :--- | :--- |
-| **Architecture** | **DDD & Principe SOLID** | Architecture hautement scalable, robuste et maintenable. |
-| **Backend API** | **FastAPI** (Python) | Serveur ultra-rapide traduisant les demandes et servant les données en temps réel à l'application mobile. |
-| **Database** | **Postgres** (SQLAlchemy) | Base de données de stockage des données statiques GTFS. |
-| **Data Broker** | **Kafka** (aiokafka) | Distribution des données GTFS-RT aux différents services. |
-| **Data Consumer** | **QuixStreams** | Traitement des données en temps réel. |
-| **Data Sink** | **Redis** | BDD No-SQL Ultra performant, idéal pour les websockets. |
-| **Gestionnaire de Paquets** | **`uv` (par astral-sh)** | Gestionnaire de dépendances et installateur de paquets ultra-rapide. |
-| **Linter & Formateur** | **Ruff** | Outil unifié et performant pour l'analyse statique et le formatage du code Python. |
-| **Source de Données** | **GTFS-RT** | Standard pour les données de transport en temps réel. https://transport.data.gouv.fr|
-| **Frontend** | **Flutter** | L'application mobile elle-même qui consomme l'API Datappy. |
+| **Architecture** | **DDD & SOLID** | Base scalable, robuste et maintenable. |
+| **Backend API** | **FastAPI** (Python 3.13) | Serveur HTTP/WebSocket temps réel. |
+| **Base de données** | **PostgreSQL 17** (SQLAlchemy async, psycopg) | Stockage des données statiques GTFS (un schéma par ville). |
+| **Message Broker** | **Kafka** (aiokafka) | Distribution des données GTFS-RT. |
+| **Stream Processing** | **QuixStreams** | Traitement du flux temps réel. |
+| **Cache / État RT** | **Redis** | État temps réel des départs, idéal pour les WebSockets. |
+| **Authentification** | **Google OAuth 2.0** | Accès à l'interface d'administration. |
+| **Frontend** | **Flutter** | Application mobile qui consomme l'API Datappy. |
+| **Gestion de paquets** | **`uv`** (astral-sh) | Gestionnaire de dépendances et de venv ultra-rapide. |
+| **Lint & Format** | **Ruff** | Analyse statique et formatage du code Python. |
+| **Vérif. de types** | **ty** (astral-sh) | Vérificateur de types statique. |
+| **Source de données** | **GTFS / GTFS-RT** | Standards des données de transport — <https://transport.data.gouv.fr> |
 
-## 🚀 Démarrage du Backend Datappy
+## 🖥️ API
 
-Cette section explique comment lancer l'API backend qui sera la source des données temps réel pour l'application mobile.
+L'API est servie sur le port `8000`. Les endpoints de transit attendent l'en-tête `city` (`montpellier`, `bordeaux`, `toulouse`, `nimes`).
+
+| Méthode | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/city` | Liste des villes supportées. |
+| `GET` | `/conveyance` | Lignes disponibles pour la ville. |
+| `GET` | `/stop?route_id=…` | Arrêts d'une ligne. |
+| `GET` | `/direction?…` | Direction / itinéraire d'un trajet. |
+| `WS` | `/stop-updates?…` | Flux temps réel des prochains départs d'un arrêt. |
+| `GET` | `/admin/login`, `/admin/callback`, `/admin/logout` | Authentification Google OAuth de l'admin. |
+| `WS` | `/admin/status` | Statut en direct des producteurs/consommateurs. |
+| `POST` | `/admin/{service}/{city}/start` \| `/stop` | Démarre/arrête un `producer` ou `consumer`. |
+
+## 🚀 Démarrage du Backend
 
 ### 1. Prérequis
 
-Assurez-vous que Python 3.13+ et uv sont installés sur votre système.
-Assurez-vous que Docker et Docker Compose sont installés sur votre système.
+* **Python 3.13+** et **[`uv`](https://github.com/astral-sh/uv)**
+* **Docker** et **Docker Compose**
 
-### 2. Cloner le Dépôt
+### 2. Cloner le dépôt
 
 ```bash
-git clone [https://github.com/votre-utilisateur/datappy.git](https://github.com/terencebon1n/datappy.git)
+git clone https://github.com/terencebon1n/datappy.git
 cd datappy
 ```
 
-### 3. Lancer les conteneurs Docker
+### 3. Lancer les conteneurs
 
 ```bash
 docker compose up -d
 ```
 
-### 4. Remplir la base de données Postgres (avec les données de Montpellier ici par exemple)
+Services exposés : backend (`8000`), PostgreSQL (`5432`), Kafka (`9092`), Redis (`6379`), interface d'admin (`8001`).
+
+### 4. Peupler la base avec le GTFS statique d'une ville
 
 ```bash
 uv run datappy populate montpellier
 ```
 
-### 5. Lancer tout les process de traitement temps réel et le backend
+### 5. Lancer le traitement temps réel
+
+En local, chaque service se lance via la CLI (`api` est déjà démarré par le conteneur `datappy`) :
 
 ```bash
-uv run datappy api
-uv run datappy producer montpellier
-uv run datappy consumer montpellier
+uv run datappy api                     # backend FastAPI (port 8000)
+uv run datappy producer montpellier    # GTFS-RT → Kafka
+uv run datappy consumer montpellier    # Kafka → Redis
 ```
 
-### 6. Lancer le front
+> En production, les producteurs/consommateurs se pilotent depuis l'**interface d'administration** (<http://localhost:8001>), qui lance et supervise ces processus via Docker.
 
-À venir
+### 6. Générer le diagramme d'architecture (optionnel)
+
+```bash
+uv run datappy diagram
+```
+
+### 7. Lancer l'application mobile
+
+```bash
+cd src/frontend
+flutter pub get
+flutter run
+```
+
+## 🧪 Développement
+
+```bash
+uv run ruff check .      # lint
+uv run ruff format .     # formatage
+uv run ty check          # vérification de types
+```
+
+Tests de l'application Flutter :
+
+```bash
+cd src/frontend
+flutter test
+```
+
+## 📦 Déploiement
+
+Le déploiement est automatisé via **GitHub Actions** (`.github/workflows/deploy.yml`) sur un *runner* auto-hébergé : à chaque `push` sur `main`, le code est récupéré et les conteneurs sont reconstruits et redémarrés (`docker compose up -d --build`).
