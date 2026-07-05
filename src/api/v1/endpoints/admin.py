@@ -2,7 +2,7 @@ import asyncio
 import secrets
 import time
 
-from fastapi import Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import Depends, HTTPException, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import RedirectResponse
 
 from src.api.dependencies import (
@@ -43,8 +43,10 @@ async def callback(code: str) -> RedirectResponse:
 
 
 @admin_router.get("/logout")
-async def logout() -> RedirectResponse:
-    response = RedirectResponse(url=settings.admin.frontend_url)
+async def logout() -> Response:
+    # Called via fetch() from the admin frontend: a redirect here would be
+    # followed cross-origin by the browser and fail CORS.
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
     response.delete_cookie("admin_session")
     return response
 
