@@ -32,6 +32,12 @@ class StopTimeModel(GTFSModelBase):
         Index("idx_stop_time_trip_id_btree", "trip_id", postgresql_using="btree"),
         Index("idx_stop_time_stop_id_btree", "stop_id", postgresql_using="btree"),
         Index(
+            "idx_stop_time_stop_id_departure_time_btree",
+            "stop_id",
+            "departure_time",
+            postgresql_using="btree",
+        ),
+        Index(
             "idx_stop_time_composite_pkey_sequence_btree",
             "trip_id",
             "stop_id",

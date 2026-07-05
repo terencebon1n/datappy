@@ -2,7 +2,14 @@ import asyncio
 import secrets
 import time
 
-from fastapi import Depends, HTTPException, Response, WebSocket, WebSocketDisconnect, status
+from fastapi import (
+    Depends,
+    HTTPException,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from fastapi.responses import RedirectResponse
 
 from src.api.dependencies import (

@@ -34,6 +34,12 @@ class TripModel(GTFSModelBase):
     __table_args__: Tuple = (
         Index("idx_trip_route_id_btree", "route_id", postgresql_using="btree"),
         Index(
+            "idx_trip_route_id_direction_id_btree",
+            "route_id",
+            "direction_id",
+            postgresql_using="btree",
+        ),
+        Index(
             "idx_trip_pkey_route_id_btree", "id", "route_id", postgresql_using="btree"
         ),
     )

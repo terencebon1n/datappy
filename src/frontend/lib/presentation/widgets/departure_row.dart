@@ -22,10 +22,11 @@ class DepartureRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int?   depTs     = departure.departureTime as int?;
-    final int    delay     = (departure.arrivalDelay as int?) ?? 0;
-    final String countdown = _countdown(depTs, now);
-    final String absTime   = _absTime(depTs);
+    final int?   depTs      = departure.departureTime as int?;
+    final int    delay      = (departure.arrivalDelay as int?) ?? 0;
+    final bool   isRealtime = departure.isRealtime as bool;
+    final String countdown  = _countdown(depTs, now);
+    final String absTime    = _absTime(depTs);
 
     return Opacity(
       opacity: opacity,
@@ -44,6 +45,12 @@ class DepartureRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
+                Icon(
+                  isRealtime ? Icons.sensors : Icons.schedule,
+                  size: 14,
+                  color: isRealtime ? TransitColors.live : TransitColors.textMuted,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

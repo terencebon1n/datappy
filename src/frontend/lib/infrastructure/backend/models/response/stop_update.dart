@@ -7,13 +7,15 @@ class StopUpdateResponse {
     final int arrivalDelay;
     final int departureTime;
     final int? departureDelay;
+    final bool isRealtime;
 
     StopUpdateResponse({
         required this.tripId,
         this.arrivalTime,
         required this.arrivalDelay,
         required this.departureTime,
-        this.departureDelay
+        this.departureDelay,
+        required this.isRealtime,
     });
 
     factory StopUpdateResponse.fromJson(Map<String, dynamic> json) => StopUpdateResponse(
@@ -22,6 +24,7 @@ class StopUpdateResponse {
         arrivalDelay: json['arrival_delay'] ?? 0,
         departureTime: json['departure_time'],
         departureDelay: json['departure_delay'] ?? 0,
+        isRealtime: json['is_realtime'] ?? true,
     );
 
     StopUpdate toDomain() => StopUpdate(
@@ -30,5 +33,6 @@ class StopUpdateResponse {
         arrivalDelay: arrivalDelay,
         departureTime: departureTime,
         departureDelay: departureDelay,
+        isRealtime: isRealtime,
     );
 }

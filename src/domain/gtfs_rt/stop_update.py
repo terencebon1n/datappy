@@ -10,6 +10,7 @@ class StopUpdate(BaseModel):
     departure_delay: int
     arrival_time: int
     arrival_delay: int
+    is_realtime: bool = True
 
     def _parse_timestamp(self, v: int) -> datetime:
         try:

@@ -2,6 +2,7 @@ from typing import Any, Iterator, Protocol, Sequence
 
 from src.domain.admin.process import ManagedProcess, ManagedServiceType
 from src.domain.gtfs.enums import GTFSFileNames
+from src.domain.gtfs.scheduled_departure import ScheduledDeparture
 from src.domain.gtfs_rt.enums import City
 from src.domain.gtfs_rt.stop_update import StopUpdate
 from src.domain.gtfs_rt.trip_update import TripUpdate
@@ -27,10 +28,22 @@ class StopUpdateReader(Protocol):
     ) -> list[StopUpdate]: ...
 
 
-class ReachableTripReader(Protocol):
+class ScheduleReader(Protocol):
     async def get_reachable_trip_ids(
         self, trip_ids: list[str], destination_stop_id: str
     ) -> Sequence[str]: ...
+
+    async def get_scheduled_departures(
+        self,
+        route_id: str,
+        direction_id: int,
+        origin_stop_id: str,
+        destination_stop_id: str,
+        after_clock: str,
+        service_date: str,
+        weekday: str,
+        limit: int,
+    ) -> Sequence[ScheduledDeparture]: ...
 
 
 class TripUpdateSource(Protocol):
