@@ -37,7 +37,7 @@ dev = [
 ]
 
 [project.scripts]
-datappy = "src.main:main"
+datappy = "backend.main:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]

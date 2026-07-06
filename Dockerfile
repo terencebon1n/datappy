@@ -24,10 +24,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/.venv /app/.venv
-COPY src ./src
+COPY backend ./backend
 COPY .env ./.env
 
 ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONPATH="/app/src"
 
-CMD ["python", "-m", "main" , "api"]
+CMD ["datappy", "api"]

@@ -24,10 +24,10 @@ Le backend suit une architecture **DDD** (Domain-Driven Design) et les principes
 
 | Couche | Contenu |
 | :--- | :--- |
-| `src/domain` | Entités et règles métier (GTFS, GTFS-RT, admin), sans dépendance technique. |
-| `src/application` | Services applicatifs (`api`, `populate`, `producer`, `consumer`, `diagram`, `admin`), producteurs, consommateurs et DTO. |
-| `src/infrastructure` | Adaptateurs techniques : PostgreSQL (SQLAlchemy), Redis, Kafka, QuixStreams, Docker, OAuth Google, lecture des flux GTFS/GTFS-RT. |
-| `src/api` | Exposition HTTP/WebSocket via FastAPI (routeurs et endpoints v1). |
+| `backend/domain` | Entités et règles métier (GTFS, GTFS-RT, admin), sans dépendance technique. |
+| `backend/application` | Services applicatifs (`api`, `populate`, `producer`, `consumer`, `diagram`, `admin`), producteurs, consommateurs et DTO. |
+| `backend/infrastructure` | Adaptateurs techniques : PostgreSQL (SQLAlchemy), Redis, Kafka, QuixStreams, Docker, OAuth Google, lecture des flux GTFS/GTFS-RT. |
+| `backend/api` | Exposition HTTP/WebSocket via FastAPI (routeurs et endpoints v1). |
 | `frontend` | Application mobile **Flutter** + interface web d'administration (Nginx). |
 
 ### Flux de données
