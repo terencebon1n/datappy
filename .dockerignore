@@ -9,5 +9,5 @@ state
 node_modules
 datappy.egg-info
 datappy.png
-src/frontend
-!src/frontend/admin
+frontend
+!frontend/admin

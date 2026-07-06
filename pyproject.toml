@@ -23,13 +23,17 @@ dependencies = [
     "quixstreams>=3.24.0",
     "redis>=8.0.0",
     "requests>=2.34.2",
-    "ruff>=0.15.18",
     "sqlalchemy[asyncio]>=2.0.51",
-    "ty>=0.0.51",
     "types-requests>=2.33.0.20260518",
     "uvicorn>=0.49.0",
     "wsproto>=1.3.2",
     "zstandard>=0.25.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.18",
+    "ty>=0.0.51",
 ]
 
 [project.scripts]

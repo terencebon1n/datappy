@@ -11,12 +11,10 @@ class DiagramService:
     def start(self) -> None:
         with Diagram("Datappy", show=False, outformat="png"):
             with Cluster("External Data Sources"):
-                source_rt = Custom(
-                    "GTFS Realtime", "src/application/services/diagram/gtfs_rt.png"
-                )
+                source_rt = Custom("GTFS Realtime", "assets/diagram/gtfs_rt.png")
                 source_schedule = Custom(
                     "GTFS Schedule",
-                    "src/application/services/diagram/gtfs_schedule.png",
+                    "assets/diagram/gtfs_schedule.png",
                 )
 
             with Cluster("Datappy Environment (Docker Compose)"):

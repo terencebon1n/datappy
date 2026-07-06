@@ -28,7 +28,7 @@ Le backend suit une architecture **DDD** (Domain-Driven Design) et les principes
 | `src/application` | Services applicatifs (`api`, `populate`, `producer`, `consumer`, `diagram`, `admin`), producteurs, consommateurs et DTO. |
 | `src/infrastructure` | Adaptateurs techniques : PostgreSQL (SQLAlchemy), Redis, Kafka, QuixStreams, Docker, OAuth Google, lecture des flux GTFS/GTFS-RT. |
 | `src/api` | Exposition HTTP/WebSocket via FastAPI (routeurs et endpoints v1). |
-| `src/frontend` | Application mobile **Flutter** + interface web d'administration (Nginx). |
+| `frontend` | Application mobile **Flutter** + interface web d'administration (Nginx). |
 
 ### Flux de données
 
@@ -124,7 +124,7 @@ uv run datappy diagram
 ### 7. Lancer l'application mobile
 
 ```bash
-cd src/frontend
+cd frontend
 flutter pub get
 flutter run
 ```
@@ -140,7 +140,7 @@ uv run ty check          # vérification de types
 Tests de l'application Flutter :
 
 ```bash
-cd src/frontend
+cd frontend
 flutter test
 ```
 
