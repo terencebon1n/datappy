@@ -6,7 +6,11 @@ from docker.errors import NotFound
 from docker.types import LogConfig
 
 import docker
-from backend.domain.admin.process import ManagedProcess, ManagedServiceType, ProcessStatus
+from backend.domain.admin.process import (
+    ManagedProcess,
+    ManagedServiceType,
+    ProcessStatus,
+)
 from backend.domain.gtfs_rt.enums import City
 
 logger = logging.getLogger(__name__)

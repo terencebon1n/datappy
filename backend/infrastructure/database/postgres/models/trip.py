@@ -4,7 +4,9 @@ from sqlalchemy import ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship, remote
 
 from backend.infrastructure.database.postgres.base import GTFSModelBase
-from backend.infrastructure.database.postgres.models.calendar_date import CalendarDateModel
+from backend.infrastructure.database.postgres.models.calendar_date import (
+    CalendarDateModel,
+)
 from backend.infrastructure.database.postgres.models.route import RouteModel
 
 

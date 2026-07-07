@@ -135,7 +135,12 @@ flutter run
 uv run ruff check .      # lint
 uv run ruff format .     # formatage
 uv run ty check          # vérification de types
+uv run pytest            # tests backend + couverture (100 % requis)
 ```
+
+Le backend est couvert à **100 %** (lignes et branches). La couverture est
+mesurée sur `backend/` et le seuil `fail_under = 100` fait échouer `pytest` en
+dessous de 100 % (voir `[tool.coverage]` dans `pyproject.toml`).
 
 Tests de l'application Flutter :
 

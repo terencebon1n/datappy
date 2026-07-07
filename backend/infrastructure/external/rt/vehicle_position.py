@@ -35,7 +35,9 @@ class VehiclePositionGateway:
                         bearing=position.bearing,
                         speed=position.speed,
                     ),
-                    current_status=vehicle.current_status,
+                    current_status=gtfs_realtime_pb2.VehiclePosition.VehicleStopStatus.Name(
+                        vehicle.current_status
+                    ),
                     timestamp=vehicle.timestamp,
                 )
             )

@@ -32,6 +32,9 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
     "ruff>=0.15.18",
     "ty>=0.0.51",
 ]
@@ -45,6 +48,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["backend*"]
 
 [tool.ruff.lint]
 select = ["ANN", "I"]
@@ -52,3 +56,27 @@ select = ["ANN", "I"]
 [tool.ruff.lint.flake8-annotations]
 allow-star-arg-any = true
 ignore-fully-untyped = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib --cov=backend --cov-report=term-missing"
+asyncio_mode = "auto"
+pythonpath = ["."]
+
+[tool.coverage.run]
+source = ["backend"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 100
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+    "if __name__ == .__main__.:",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests don't require full type annotations.
+"tests/**" = ["ANN"]

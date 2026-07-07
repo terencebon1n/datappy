@@ -5,7 +5,9 @@ from sqlalchemy.orm import aliased
 
 from backend.domain.gtfs.scheduled_departure import ScheduledDeparture
 from backend.infrastructure.database.postgres.models.calendar import CalendarModel
-from backend.infrastructure.database.postgres.models.calendar_date import CalendarDateModel
+from backend.infrastructure.database.postgres.models.calendar_date import (
+    CalendarDateModel,
+)
 from backend.infrastructure.database.postgres.models.stop_time import StopTimeModel
 from backend.infrastructure.database.postgres.models.trip import TripModel
 from backend.infrastructure.database.repository import AsyncQueryRepository
