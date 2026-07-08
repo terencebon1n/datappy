@@ -9,8 +9,10 @@ import 'package:frontend/infrastructure/backend/city_header.dart' show cityHeade
 
 class StopNameRepository implements IStopNameRepository {
     final String apiBase;
+    final http.Client _client;
 
-    StopNameRepository({required this.apiBase});
+    StopNameRepository({required this.apiBase, http.Client? client})
+        : _client = client ?? http.Client();
 
     @override
     Future<List<String>> resolveStopNames(String routeId, City city) async {
@@ -19,7 +21,7 @@ class StopNameRepository implements IStopNameRepository {
                 'route_id': routeId,
             });
 
-        final response = await http.get(uri, headers: cityHeaders(city));
+        final response = await _client.get(uri, headers: cityHeaders(city));
         if (response.statusCode == 200) {
             final List jsonList = jsonDecode(response.body);
             return jsonList.map((e) => e['name'].toString()).toList();

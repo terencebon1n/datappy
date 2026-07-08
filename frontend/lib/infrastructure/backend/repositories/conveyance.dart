@@ -11,13 +11,15 @@ import 'package:frontend/infrastructure/backend/models/response/conveyance.dart'
 
 class ConveyanceRepository implements IConveyanceRepository {
     final String apiBase;
+    final http.Client _client;
 
-    ConveyanceRepository({required this.apiBase});
+    ConveyanceRepository({required this.apiBase, http.Client? client})
+        : _client = client ?? http.Client();
 
     @override
     Future<List<Conveyance>> resolveConveyances(City city) async {
         final uri = Uri.parse('$apiBase/conveyance');
-        final response = await http.get(uri, headers: cityHeaders(city));
+        final response = await _client.get(uri, headers: cityHeaders(city));
         if (response.statusCode == 200) {
             final List jsonList = jsonDecode(response.body);
             final List<Conveyance> conveyances = jsonList.map(

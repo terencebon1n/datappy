@@ -1,0 +1,169 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart' show ThemeMode;
+
+import 'package:frontend/domain/city.dart';
+import 'package:frontend/domain/conveyance.dart';
+import 'package:frontend/domain/direction.dart';
+import 'package:frontend/domain/path.dart';
+import 'package:frontend/domain/stop_update.dart';
+import 'package:frontend/domain/transit_path.dart';
+import 'package:frontend/domain/saved_selection.dart';
+import 'package:frontend/domain/repositories/i_city.dart';
+import 'package:frontend/domain/repositories/i_conveyance.dart';
+import 'package:frontend/domain/repositories/i_direction.dart';
+import 'package:frontend/domain/repositories/i_stop_name.dart';
+import 'package:frontend/domain/repositories/i_stop_update.dart';
+import 'package:frontend/domain/repositories/i_selection_store.dart';
+import 'package:frontend/domain/repositories/i_favorites_store.dart';
+import 'package:frontend/domain/repositories/i_theme_store.dart';
+
+City sampleCity([String name = 'Lyon']) => City(name: name);
+
+Conveyance sampleConveyance({
+  String id = 'T1',
+  String shortName = 'T1',
+  String longName = 'Tram T1: Perrache - Debourg',
+  int colorValue = 0xFF0080C0,
+  int typeId = 0,
+  String typeName = 'Tramway',
+}) =>
+    Conveyance(
+      id: id,
+      shortName: shortName,
+      longName: longName,
+      colorValue: colorValue,
+      typeId: typeId,
+      typeName: typeName,
+    );
+
+Direction sampleDirection() => Direction(
+      directionId: 0,
+      stopIdOrigin: 'stop_origin',
+      stopIdDestination: 'stop_dest',
+    );
+
+TransitPath sampleTransitPath() => TransitPath(
+      city: 'lyon',
+      routeId: 'T1',
+      direction: sampleDirection(),
+    );
+
+SavedSelection sampleSelection({String id = 'T1'}) => SavedSelection(
+      city: sampleCity(),
+      conveyance: sampleConveyance(id: id, shortName: id),
+      sourceStop: 'Perrache',
+      destStop: 'Debourg',
+      direction: sampleDirection(),
+    );
+
+StopUpdate sampleStopUpdate({
+  String tripId = 'trip-1',
+  int? arrivalTime,
+  int arrivalDelay = 0,
+  int departureTime = 1000,
+  int? departureDelay = 0,
+  bool isRealtime = true,
+}) =>
+    StopUpdate(
+      tripId: tripId,
+      arrivalTime: arrivalTime,
+      arrivalDelay: arrivalDelay,
+      departureTime: departureTime,
+      departureDelay: departureDelay,
+      isRealtime: isRealtime,
+    );
+
+class FakeCityRepo implements ICityRepository {
+  FakeCityRepo({this.cities = const [], this.throwError = false});
+  final List<City> cities;
+  final bool throwError;
+
+  @override
+  Future<List<City>> resolveCities() async {
+    if (throwError) throw Exception('boom');
+    return cities;
+  }
+}
+
+class FakeConveyanceRepo implements IConveyanceRepository {
+  FakeConveyanceRepo({this.conveyances = const []});
+  final List<Conveyance> conveyances;
+
+  @override
+  Future<List<Conveyance>> resolveConveyances(City city) async => conveyances;
+}
+
+class FakeStopNameRepo implements IStopNameRepository {
+  FakeStopNameRepo({this.stops = const []});
+  final List<String> stops;
+
+  @override
+  Future<List<String>> resolveStopNames(String routeId, City city) async =>
+      stops;
+}
+
+class FakeDirectionRepo implements IDirectionRepository {
+  FakeDirectionRepo({Direction? direction, this.throwError = false, this.gate})
+      : direction = direction ?? sampleDirection();
+  final Direction direction;
+  final bool throwError;
+  int calls = 0;
+
+  final Future<void>? gate;
+
+  @override
+  Future<Direction> resolveDirection(Path path, City city) async {
+    calls++;
+    if (gate != null) await gate;
+    if (throwError) throw Exception('no direction');
+    return direction;
+  }
+}
+
+class FakeStopUpdateRepo implements IStopUpdateRepository {
+  FakeStopUpdateRepo();
+  final StreamController<List<StopUpdate>> controller =
+      StreamController<List<StopUpdate>>.broadcast();
+  final List<TransitPath> calls = [];
+
+  @override
+  Stream<List<StopUpdate>> watchStopUpdates(TransitPath transitPath) {
+    calls.add(transitPath);
+    return controller.stream;
+  }
+}
+
+class InMemorySelectionStore implements ISelectionStore {
+  InMemorySelectionStore([this.selection]);
+  SavedSelection? selection;
+
+  @override
+  Future<SavedSelection?> load() async => selection;
+
+  @override
+  Future<void> save(SavedSelection s) async => selection = s;
+}
+
+class InMemoryFavoritesStore implements IFavoritesStore {
+  InMemoryFavoritesStore([List<SavedSelection>? initial])
+      : saved = initial ?? [];
+  List<SavedSelection> saved;
+
+  @override
+  Future<List<SavedSelection>> load() async => saved;
+
+  @override
+  Future<void> save(List<SavedSelection> favorites) async => saved = favorites;
+}
+
+class InMemoryThemeStore implements IThemeStore {
+  InMemoryThemeStore([this.mode]);
+  ThemeMode? mode;
+
+  @override
+  ThemeMode? load() => mode;
+
+  @override
+  Future<void> save(ThemeMode m) async => mode = m;
+}

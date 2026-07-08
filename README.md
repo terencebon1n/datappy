@@ -146,8 +146,16 @@ Tests de l'application Flutter :
 
 ```bash
 cd frontend
-flutter test
+flutter test --coverage              # tests + couverture (coverage/lcov.info)
+dart run tool/check_coverage.dart    # échoue en dessous de 100 %
 ```
+
+Le frontend est couvert à **100 %** (lignes). La couverture est mesurée sur
+`frontend/lib/` et le script `tool/check_coverage.dart` fait échouer la commande
+en dessous de 100 % — l'équivalent du `fail_under = 100` du backend. Le fichier
+`test/coverage_helper_test.dart` (régénérable via `tool/gen_coverage_helper.sh`)
+importe chaque fichier de `lib/` afin qu'aucun fichier non testé n'échappe au
+rapport.
 
 ## 📦 Déploiement
 

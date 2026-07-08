@@ -12,8 +12,10 @@ import 'package:frontend/domain/repositories/i_direction.dart' show IDirectionRe
 
 class DirectionRepository implements IDirectionRepository {
   final String apiBase;
+  final http.Client _client;
 
-  DirectionRepository({required this.apiBase});
+  DirectionRepository({required this.apiBase, http.Client? client})
+      : _client = client ?? http.Client();
 
   @override
   Future<Direction> resolveDirection(Path path, City city) async {
@@ -24,7 +26,7 @@ class DirectionRepository implements IDirectionRepository {
             'stop_name__destination': path.stopNameDestination,
         });
 
-    final response = await http.get(uri, headers: cityHeaders(city));
+    final response = await _client.get(uri, headers: cityHeaders(city));
 
     if (response.statusCode == 200) {
 
