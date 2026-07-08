@@ -35,7 +35,12 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
 
   Future<void> _init() async {
     final saved = await _selectionStore.load();
-    final cities = await _cityRepo.resolveCities();
+    List<City> cities;
+    try {
+      cities = await _cityRepo.resolveCities();
+    } catch (_) {
+      cities = const [];
+    }
     if (saved == null) {
       emit(state.copyWith(cities: cities));
       return;

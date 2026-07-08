@@ -9,13 +9,15 @@ import 'package:frontend/infrastructure/backend/models/response/city.dart' show 
 
 class CityRepository implements ICityRepository {
     final String apiBase;
+    final http.Client _client;
 
-    CityRepository({required this.apiBase});
+    CityRepository({required this.apiBase, http.Client? client})
+        : _client = client ?? http.Client();
 
     @override
     Future<List<City>> resolveCities() async {
         final uri = Uri.parse('$apiBase/city');
-        final response = await http.get(uri);
+        final response = await _client.get(uri);
         if (response.statusCode == 200) {
             final List jsonList = jsonDecode(response.body);
             final List<City> cities = jsonList.map(
