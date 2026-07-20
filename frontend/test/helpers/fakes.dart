@@ -7,6 +7,7 @@ import 'package:frontend/domain/conveyance.dart';
 import 'package:frontend/domain/direction.dart';
 import 'package:frontend/domain/path.dart';
 import 'package:frontend/domain/stop_update.dart';
+import 'package:frontend/domain/alert.dart';
 import 'package:frontend/domain/transit_path.dart';
 import 'package:frontend/domain/saved_selection.dart';
 import 'package:frontend/domain/repositories/i_city.dart';
@@ -14,6 +15,7 @@ import 'package:frontend/domain/repositories/i_conveyance.dart';
 import 'package:frontend/domain/repositories/i_direction.dart';
 import 'package:frontend/domain/repositories/i_stop_name.dart';
 import 'package:frontend/domain/repositories/i_stop_update.dart';
+import 'package:frontend/domain/repositories/i_alert.dart';
 import 'package:frontend/domain/repositories/i_selection_store.dart';
 import 'package:frontend/domain/repositories/i_favorites_store.dart';
 import 'package:frontend/domain/repositories/i_theme_store.dart';
@@ -166,4 +168,37 @@ class InMemoryThemeStore implements IThemeStore {
 
   @override
   Future<void> save(ThemeMode m) async => mode = m;
+}
+
+Alert sampleAlert({
+  String id = 'alert-1',
+  String cause = 'STRIKE',
+  String effect = 'NO_SERVICE',
+  AlertSeverity severity = AlertSeverity.warning,
+  String headerText = 'Travaux sur la ligne',
+  String descriptionText = 'Circulation interrompue entre A et B.',
+  String? url,
+}) =>
+    Alert(
+      id: id,
+      cause: cause,
+      effect: effect,
+      severity: severity,
+      headerText: headerText,
+      descriptionText: descriptionText,
+      url: url,
+    );
+
+class FakeAlertRepo implements IAlertRepository {
+  FakeAlertRepo({this.alerts = const [], this.throwError = false});
+  List<Alert> alerts;
+  bool throwError;
+  final List<TransitPath> calls = [];
+
+  @override
+  Future<List<Alert>> resolveAlerts(TransitPath transitPath) async {
+    calls.add(transitPath);
+    if (throwError) throw Exception('alert boom');
+    return alerts;
+  }
 }

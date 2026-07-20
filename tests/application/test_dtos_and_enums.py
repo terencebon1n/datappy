@@ -32,9 +32,7 @@ def test_stop_dtos():
 
 
 def test_trip_dtos():
-    path = PathDTO(
-        route_id="r1", stop_name__origin="A", stop_name__destination="B"
-    )
+    path = PathDTO(route_id="r1", stop_name__origin="A", stop_name__destination="B")
     assert path.stop_name__origin == "A"
     direction = DirectionDTO(
         direction_id=1, stop_id__origin="a", stop_id__destination="b"

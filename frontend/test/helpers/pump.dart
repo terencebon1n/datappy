@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:frontend/application/route_selection/cubit.dart';
 import 'package:frontend/application/stop_update/cubit.dart';
+import 'package:frontend/application/alert/cubit.dart';
 import 'package:frontend/application/theme/cubit.dart';
 import 'package:frontend/application/favorites/cubit.dart';
 import 'package:frontend/presentation/theme/colors.dart';
@@ -51,6 +52,7 @@ class TestCubits {
   TestCubits({
     RouteSelectionCubit? routeSelection,
     StopUpdateCubit? stopUpdate,
+    AlertCubit? alert,
     ThemeCubit? theme,
     FavoritesCubit? favorites,
   })  : routeSelection = routeSelection ??
@@ -66,6 +68,11 @@ class TestCubits {
               stopUpdateRepo: FakeStopUpdateRepo(),
               selectionStore: InMemorySelectionStore(),
             ),
+        alert = alert ??
+            AlertCubit(
+              alertRepo: FakeAlertRepo(),
+              selectionStore: InMemorySelectionStore(),
+            ),
         theme = theme ??
             ThemeCubit(store: InMemoryThemeStore(), initial: ThemeMode.light),
         favorites =
@@ -73,12 +80,14 @@ class TestCubits {
 
   final RouteSelectionCubit routeSelection;
   final StopUpdateCubit stopUpdate;
+  final AlertCubit alert;
   final ThemeCubit theme;
   final FavoritesCubit favorites;
 
   Future<void> close() async {
     await routeSelection.close();
     await stopUpdate.close();
+    await alert.close();
     await theme.close();
     await favorites.close();
   }
@@ -98,6 +107,7 @@ Future<TestCubits> pumpApp(
       providers: [
         BlocProvider.value(value: c.routeSelection),
         BlocProvider.value(value: c.stopUpdate),
+        BlocProvider.value(value: c.alert),
         BlocProvider.value(value: c.theme),
         BlocProvider.value(value: c.favorites),
       ],

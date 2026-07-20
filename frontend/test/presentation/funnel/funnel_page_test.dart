@@ -100,6 +100,7 @@ void main() {
     expect(find.byType(FunnelPage), findsNothing);
     expect(harness.repo.calls, isNotEmpty);
     harness.cubit.stop();
+    cubits.alert.stop();
   });
 
   testWidgets('does not submit while another route sits on top', (tester) async {

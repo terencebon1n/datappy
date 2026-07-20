@@ -11,6 +11,7 @@
 ## ✨ Fonctionnalités
 
 * 🔴 Départs temps réel poussés en direct (WebSocket) et repli sur l'horaire planifié.
+* ⚠️ Alertes trafic (GTFS-RT `Alert`) affichées sous la liste des départs, filtrées sur la ligne, la direction et l'arrêt sélectionnés.
 * ⭐ Favoris avec réordonnancement par glisser-déposer, persistance de la dernière recherche.
 * 🌙 Mode sombre.
 * 🏙️ Multi-villes : **Montpellier**, **Bordeaux**, **Toulouse**, **Nîmes**.
@@ -71,6 +72,7 @@ L'API est servie sur le port `8000`. Les endpoints de transit attendent l'en-tê
 | `GET` | `/stop?route_id=…` | Arrêts d'une ligne. |
 | `GET` | `/direction?…` | Direction / itinéraire d'un trajet. |
 | `WS` | `/stop-updates?…` | Flux temps réel des prochains départs d'un arrêt. |
+| `GET` | `/alerts?city=…&route_id=…&direction_id=…&stop_id=…` | Alertes trafic GTFS-RT liées à la ligne / direction / arrêt sélectionné. |
 | `GET` | `/admin/login`, `/admin/callback`, `/admin/logout` | Authentification Google OAuth de l'admin. |
 | `WS` | `/admin/status` | Statut en direct des producteurs/consommateurs. |
 | `POST` | `/admin/{service}/{city}/start` \| `/stop` | Démarre/arrête un `producer` ou `consumer`. |

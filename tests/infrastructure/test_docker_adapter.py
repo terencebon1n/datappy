@@ -15,9 +15,7 @@ from backend.infrastructure.docker.adapter import (
 
 def test_container_status_to_process_status():
     assert DockerContainerStatus.RUNNING.to_process_status() == ProcessStatus.RUNNING
-    assert (
-        DockerContainerStatus.RESTARTING.to_process_status() == ProcessStatus.RUNNING
-    )
+    assert DockerContainerStatus.RESTARTING.to_process_status() == ProcessStatus.RUNNING
     assert DockerContainerStatus.EXITED.to_process_status() == ProcessStatus.CRASHED
     assert DockerContainerStatus.CREATED.to_process_status() == ProcessStatus.STOPPED
     assert DockerContainerStatus.PAUSED.to_process_status() == ProcessStatus.STOPPED

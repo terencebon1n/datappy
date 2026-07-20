@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from backend.api.v1.context import require_city
 from backend.application.services.admin.auth import AdminAuthService
 from backend.application.services.admin.process_manager import ProcessManagerService
+from backend.application.services.api.alert_feed import AlertFeedService
 from backend.application.services.api.route_loader import RouteLoaderService
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.trip_loader import TripLoaderService
@@ -20,6 +21,7 @@ from backend.infrastructure.database.postgres.manager import PostgresDatabaseMan
 from backend.infrastructure.database.postgres.repositories.route import RouteRepository
 from backend.infrastructure.database.postgres.repositories.stop import StopRepository
 from backend.infrastructure.database.postgres.repositories.trip import TripRepository
+from backend.infrastructure.database.redis.repositories.alert import AlertRepository
 from backend.infrastructure.docker.adapter import DockerProcessAdapter
 
 db_manager = PostgresDatabaseManager(is_async=False)
@@ -76,6 +78,10 @@ def get_stop_loader(session: GtfsSession) -> StopLoaderService:
 
 def get_trip_loader(session: GtfsSession) -> TripLoaderService:
     return TripLoaderService(TripRepository(session))
+
+
+def get_alert_feed() -> AlertFeedService:
+    return AlertFeedService(AlertRepository(redis_db))
 
 
 async def require_admin_session(request: Request) -> AdminSession:

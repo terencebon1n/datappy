@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/application/route_selection/cubit.dart';
 import 'package:frontend/application/route_selection/state.dart';
 import 'package:frontend/application/stop_update/cubit.dart';
+import 'package:frontend/application/alert/cubit.dart';
 import 'package:frontend/domain/transit_path.dart';
 import 'package:frontend/presentation/funnel/funnel_colors.dart';
 import 'package:frontend/presentation/funnel/city_step.dart';
@@ -26,13 +27,13 @@ class FunnelPage extends StatelessWidget {
         listenWhen: (prev, curr) => !prev.canSubmit && curr.canSubmit,
         listener: (context, state) {
           if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
-          context.read<StopUpdateCubit>().watchStopUpdates(
-            TransitPath(
-              city: state.selectedCity!.name.toLowerCase(),
-              routeId: state.selectedConveyance!.id,
-              direction: state.direction!,
-            ),
+          final path = TransitPath(
+            city: state.selectedCity!.name.toLowerCase(),
+            routeId: state.selectedConveyance!.id,
+            direction: state.direction!,
           );
+          context.read<StopUpdateCubit>().watchStopUpdates(path);
+          context.read<AlertCubit>().watchAlerts(path);
           Navigator.of(context).pop(true);
         },
         child: Builder(
