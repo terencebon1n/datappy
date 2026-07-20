@@ -6,6 +6,7 @@ import 'package:frontend/domain/repositories/i_conveyance.dart' show IConveyance
 import 'package:frontend/domain/repositories/i_direction.dart' show IDirectionRepository;
 import 'package:frontend/domain/repositories/i_stop_name.dart' show IStopNameRepository;
 import 'package:frontend/domain/repositories/i_stop_update.dart' show IStopUpdateRepository;
+import 'package:frontend/domain/repositories/i_alert.dart' show IAlertRepository;
 import 'package:frontend/domain/repositories/i_selection_store.dart' show ISelectionStore;
 import 'package:frontend/domain/repositories/i_theme_store.dart' show IThemeStore;
 import 'package:frontend/domain/repositories/i_favorites_store.dart' show IFavoritesStore;
@@ -15,11 +16,13 @@ import 'package:frontend/infrastructure/backend/repositories/conveyance.dart' sh
 import 'package:frontend/infrastructure/backend/repositories/direction.dart' show DirectionRepository;
 import 'package:frontend/infrastructure/backend/repositories/stop_name.dart' show StopNameRepository;
 import 'package:frontend/infrastructure/backend/repositories/stop_update.dart' show StopUpdateRepository;
+import 'package:frontend/infrastructure/backend/repositories/alert.dart' show AlertRepository;
 import 'package:frontend/infrastructure/local/selection_store.dart' show SharedPrefsSelectionStore;
 import 'package:frontend/infrastructure/local/theme_store.dart' show SharedPrefsThemeStore;
 import 'package:frontend/infrastructure/local/favorites_store.dart' show SharedPrefsFavoritesStore;
 
 import 'package:frontend/application/stop_update/cubit.dart' show StopUpdateCubit;
+import 'package:frontend/application/alert/cubit.dart' show AlertCubit;
 import 'package:frontend/application/route_selection/cubit.dart' show RouteSelectionCubit;
 import 'package:frontend/application/favorites/cubit.dart' show FavoritesCubit;
 import 'package:frontend/application/theme/cubit.dart' show ThemeCubit, resolveIsDark;
@@ -38,6 +41,7 @@ Widget buildDatappyApp({
     required IStopNameRepository stopRepo,
     required IDirectionRepository directionRepo,
     required IStopUpdateRepository stopUpdateRepo,
+    required IAlertRepository alertRepo,
     required ThemeMode initialThemeMode,
 }) {
     return MultiBlocProvider(
@@ -51,6 +55,10 @@ Widget buildDatappyApp({
             )),
             BlocProvider(create: (context) => StopUpdateCubit(
                 stopUpdateRepo: stopUpdateRepo,
+                selectionStore: selectionStore,
+            )),
+            BlocProvider(create: (context) => AlertCubit(
+                alertRepo: alertRepo,
                 selectionStore: selectionStore,
             )),
             BlocProvider(create: (context) => ThemeCubit(
@@ -95,6 +103,7 @@ Future<void> main() async {
         stopRepo: StopNameRepository(apiBase: DatappyConfig.apiBase),
         directionRepo: DirectionRepository(apiBase: DatappyConfig.apiBase),
         stopUpdateRepo: StopUpdateRepository(wsBase: DatappyConfig.wsBase),
+        alertRepo: AlertRepository(apiBase: DatappyConfig.apiBase),
         initialThemeMode: themeStore.load() ?? ThemeMode.system,
     ));
 }

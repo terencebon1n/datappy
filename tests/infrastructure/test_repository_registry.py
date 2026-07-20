@@ -15,9 +15,7 @@ def test_supported_files_lists_all_ten():
 
 
 def test_get_repository_for_known_file():
-    repo = RepositoryRegistry.get_repository_for_file(
-        GTFSFileNames.AGENCY, MagicMock()
-    )
+    repo = RepositoryRegistry.get_repository_for_file(GTFSFileNames.AGENCY, MagicMock())
     assert isinstance(repo, BulkIngestRepository)
 
 

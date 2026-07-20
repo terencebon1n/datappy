@@ -2,6 +2,7 @@ import 'dart:io';
 
 const _noExecutableLines = <String>{
   'lib/config/datappy_config.dart',
+  'lib/domain/repositories/i_alert.dart',
   'lib/domain/repositories/i_city.dart',
   'lib/domain/repositories/i_conveyance.dart',
   'lib/domain/repositories/i_direction.dart',

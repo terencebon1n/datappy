@@ -75,9 +75,7 @@ async def test_stop_time_get_scheduled_departures():
 async def test_trip_get_direction_found():
     result = MagicMock()
     result.all.return_value = [
-        SimpleNamespace(
-            direction_id=1, origin_stop_id="o", destination_stop_id="d"
-        )
+        SimpleNamespace(direction_id=1, origin_stop_id="o", destination_stop_id="d")
     ]
     repo = TripRepository(_session_returning(result))
 

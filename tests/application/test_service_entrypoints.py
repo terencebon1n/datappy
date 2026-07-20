@@ -48,20 +48,29 @@ def test_diagram_service_builds_diagram():
     assert patches["Custom"].call_count == 2
 
 
-def test_consumer_service_starts_stream():
+def test_consumer_service_starts_both_streams():
     stream_cls = MagicMock()
+    alert_stream_cls = MagicMock()
     with (
         patch.object(consumer_module, "QuixStreamsConsumerAdapter") as adapter_cls,
         patch.object(consumer_module, "RedisHsetStopUpdateSink") as sink_cls,
+        patch.object(consumer_module, "RedisHsetAlertSink") as alert_sink_cls,
         patch.object(consumer_module, "QuixStreamsStopUpdateStream", stream_cls),
+        patch.object(consumer_module, "QuixStreamsAlertStream", alert_stream_cls),
     ):
         consumer_module.QuixStreamsConsumerService().start(City.MONTPELLIER)
 
     adapter_cls.assert_called_once_with(consumer_group="stop-update-montpellier")
     sink_cls.assert_called_once()
+    alert_sink_cls.assert_called_once()
+    # both dataframes registered on the single Quix application
     stream_cls.assert_called_once()
-    # entered as a context manager and run() invoked
+    alert_stream_cls.assert_called_once()
     stream_cls.return_value.__enter__.return_value.run.assert_called_once()
+    alert_stream_cls.return_value.__enter__.assert_called_once()
+    # both streams released on exit
+    stream_cls.return_value.__exit__.assert_called_once()
+    alert_stream_cls.return_value.__exit__.assert_called_once()
 
 
 async def test_populate_service_happy_path():

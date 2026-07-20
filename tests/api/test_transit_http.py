@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 from backend.api.dependencies import (
+    get_alert_feed,
     get_route_loader,
     get_stop_loader,
     get_trip_loader,
@@ -8,6 +9,8 @@ from backend.api.dependencies import (
 from backend.application.dto.route import ConveyanceDTO
 from backend.application.dto.stop import StopNameDTO
 from backend.application.dto.trip import DirectionDTO
+from backend.domain.gtfs_rt.alert import Alert, InformedEntity
+from backend.domain.gtfs_rt.enums import AlertCause, AlertEffect, AlertSeverity
 
 _CITY_HEADER = {"city": "montpellier"}
 
@@ -77,3 +80,65 @@ def test_get_direction(app, client):
 
     assert response.status_code == 200
     assert response.json()["direction_id"] == 1
+
+
+def test_get_alerts(app, client):
+    feed = MagicMock()
+    feed.get_alerts = AsyncMock(
+        return_value=[
+            Alert(
+                id="a1",
+                cause=AlertCause.STRIKE,
+                effect=AlertEffect.NO_SERVICE,
+                severity=AlertSeverity.SEVERE,
+                header_text="Grève",
+                description_text="Aucun service",
+                url="https://info.fr",
+                informed_entities=[InformedEntity(route_id="r1")],
+            )
+        ]
+    )
+    app.dependency_overrides[get_alert_feed] = lambda: feed
+
+    response = client.get(
+        "/alerts",
+        params={
+            "city": "montpellier",
+            "route_id": "r1",
+            "direction_id": 0,
+            "stop_id": "s1",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body[0]["id"] == "a1"
+    assert body[0]["severity"] == "SEVERE"
+    assert body[0]["header_text"] == "Grève"
+    assert body[0]["url"] == "https://info.fr"
+    # the informed entities stay server-side, they are a filtering concern
+    assert "informed_entities" not in body[0]
+
+    selection = feed.get_alerts.await_args.args[0]
+    assert selection.route_id == "r1"
+    assert selection.direction_id == 0
+    assert selection.stop_id == "s1"
+
+
+def test_get_alerts_without_stop_or_direction(app, client):
+    feed = MagicMock()
+    feed.get_alerts = AsyncMock(return_value=[])
+    app.dependency_overrides[get_alert_feed] = lambda: feed
+
+    response = client.get("/alerts", params={"city": "montpellier", "route_id": "r1"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+    selection = feed.get_alerts.await_args.args[0]
+    assert selection.direction_id is None
+    assert selection.stop_id is None
+
+
+def test_get_alerts_requires_route_id(client):
+    response = client.get("/alerts", params={"city": "montpellier"})
+    assert response.status_code == 422

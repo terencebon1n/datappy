@@ -3,6 +3,7 @@ from typing import Any, Iterator, Protocol, Sequence
 from backend.domain.admin.process import ManagedProcess, ManagedServiceType
 from backend.domain.gtfs.enums import GTFSFileNames
 from backend.domain.gtfs.scheduled_departure import ScheduledDeparture
+from backend.domain.gtfs_rt.alert import Alert
 from backend.domain.gtfs_rt.enums import City
 from backend.domain.gtfs_rt.stop_update import StopUpdate
 from backend.domain.gtfs_rt.trip_update import TripUpdate
@@ -46,10 +47,20 @@ class ScheduleReader(Protocol):
     ) -> Sequence[ScheduledDeparture]: ...
 
 
+class AlertReader(Protocol):
+    async def get_alerts(self, city: City) -> list[Alert]: ...
+
+
 class TripUpdateSource(Protocol):
     async def fetch_rt(self, url: str) -> bytes: ...
 
     def parse_feed(self, payload: bytes) -> list[TripUpdate]: ...
+
+
+class AlertSource(Protocol):
+    async def fetch_rt(self, url: str) -> bytes: ...
+
+    def parse_feed(self, payload: bytes) -> list[Alert]: ...
 
 
 class MessageProducer(Protocol):

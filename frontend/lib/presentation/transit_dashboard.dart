@@ -6,12 +6,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:frontend/application/route_selection/cubit.dart';
 import 'package:frontend/application/stop_update/cubit.dart';
+import 'package:frontend/application/alert/cubit.dart';
 import 'package:frontend/domain/saved_selection.dart';
 import 'package:frontend/domain/transit_path.dart';
 import 'package:frontend/presentation/theme/colors.dart';
 import 'package:frontend/presentation/widgets/top_bar.dart';
 import 'package:frontend/presentation/widgets/line_card.dart';
 import 'package:frontend/presentation/widgets/departure_board.dart';
+import 'package:frontend/presentation/widgets/alert_board.dart';
 import 'package:frontend/presentation/widgets/bottom_nav.dart';
 import 'package:frontend/presentation/widgets/footer_hint.dart';
 import 'package:frontend/presentation/favorites/favorites_page.dart';
@@ -86,6 +88,7 @@ class _TransitDashboardState extends State<TransitDashboard> {
                 LineCard(now: _now),
                 const SizedBox(height: 10),
                 DepartureBoard(now: _now),
+                const AlertBoard(),
                 const SizedBox(height: 8),
                 const FooterHint(),
               ],
@@ -97,14 +100,14 @@ class _TransitDashboardState extends State<TransitDashboard> {
   }
 
   void _loadFavorite(SavedSelection fav) {
-    context.read<RouteSelectionCubit>().loadSelection(fav);
-    context.read<StopUpdateCubit>().watchStopUpdates(
-      TransitPath(
-        city: fav.city.name.toLowerCase(),
-        routeId: fav.conveyance.id,
-        direction: fav.direction,
-      ),
+    final path = TransitPath(
+      city: fav.city.name.toLowerCase(),
+      routeId: fav.conveyance.id,
+      direction: fav.direction,
     );
+    context.read<RouteSelectionCubit>().loadSelection(fav);
+    context.read<StopUpdateCubit>().watchStopUpdates(path);
+    context.read<AlertCubit>().watchAlerts(path);
     setState(() => _navIndex = 0);
   }
 

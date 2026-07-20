@@ -58,6 +58,7 @@ void main() {
     expect(harness.repo.calls, isNotEmpty);
 
     harness.cubit.stop();
+    cubits.alert.stop();
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -102,6 +103,7 @@ void main() {
     expect(harness.repo.calls, isNotEmpty);
 
     harness.cubit.stop();
+    cubits.alert.stop();
     await tester.pumpWidget(const SizedBox());
   });
 }

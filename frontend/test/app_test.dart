@@ -19,6 +19,7 @@ void main() {
       stopRepo: FakeStopNameRepo(),
       directionRepo: FakeDirectionRepo(),
       stopUpdateRepo: FakeStopUpdateRepo(),
+      alertRepo: FakeAlertRepo(),
       initialThemeMode: ThemeMode.light,
     ));
     await tester.pump();

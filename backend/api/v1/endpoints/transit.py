@@ -11,15 +11,18 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import (
+    get_alert_feed,
     get_route_loader,
     get_stop_loader,
     get_trip_loader,
     gtfs_engine_for,
     redis_db,
 )
+from backend.application.dto.alert import AlertDTO, AlertPathDTO
 from backend.application.dto.route import ConveyanceDTO, RouteIdDTO
 from backend.application.dto.stop import StopNameDTO, TransitPathDTO
 from backend.application.dto.trip import DirectionDTO, PathDTO
+from backend.application.services.api.alert_feed import AlertFeedService
 from backend.application.services.api.route_loader import RouteLoaderService
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.stop_update_feed import StopUpdateFeed
@@ -68,6 +71,15 @@ async def get_direction(
     trip_loader: Annotated[TripLoaderService, Depends(get_trip_loader)],
 ) -> DirectionDTO:
     return await trip_loader.get_direction(selection)
+
+
+@gtfs_rt_router.get("/alerts", response_model=list[AlertDTO])
+async def get_alerts(
+    selection: Annotated[AlertPathDTO, Query()],
+    alert_feed: Annotated[AlertFeedService, Depends(get_alert_feed)],
+) -> list[AlertDTO]:
+    alerts = await alert_feed.get_alerts(selection)
+    return [AlertDTO.from_domain(alert) for alert in alerts]
 
 
 @gtfs_rt_router.websocket("/stop-updates")
