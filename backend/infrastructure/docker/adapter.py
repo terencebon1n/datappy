@@ -65,10 +65,9 @@ class DockerProcessAdapter:
             self._client.containers.get(name).remove(force=True)
         except NotFound:
             pass
-        logger.info("Is it crashing here ?")
         self._client.containers.run(
             self._image,
-            command=["python", "-m", "main", service.value, city.value],
+            command=["datappy", service.value, city.value],
             name=name,
             detach=True,
             restart_policy=DockerRestartPolicy.ON_FAILURE.config(max_retries=5),
