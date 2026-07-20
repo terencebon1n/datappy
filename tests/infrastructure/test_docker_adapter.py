@@ -53,6 +53,21 @@ def test_run_service_removes_existing_then_runs():
     assert proc.container_name == "datappy_producer_montpellier"
 
 
+def test_run_service_uses_the_installed_console_script():
+    # The image exposes `backend.main:main` as the `datappy` script (same entry
+    # point as the Dockerfile CMD); there is no importable top-level `main`.
+    client = MagicMock()
+    adapter = _adapter_with_client(client)
+
+    adapter.run_service(ManagedServiceType.CONSUMER, City.MONTPELLIER)
+
+    assert client.containers.run.call_args.kwargs["command"] == [
+        "datappy",
+        "consumer",
+        "montpellier",
+    ]
+
+
 def test_run_service_when_container_absent():
     client = MagicMock()
     client.containers.get.side_effect = NotFound("absent")
