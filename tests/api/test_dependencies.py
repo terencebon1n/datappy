@@ -6,6 +6,9 @@ from fastapi import HTTPException
 
 import backend.api.dependencies as deps
 from backend.application.services.api.nearby_stop_loader import NearbyStopLoaderService
+from backend.application.services.api.route_geometry_loader import (
+    RouteGeometryLoaderService,
+)
 from backend.application.services.api.route_loader import RouteLoaderService
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.trip_loader import TripLoaderService
@@ -44,6 +47,9 @@ def test_loaders_are_wired():
     assert isinstance(deps.get_stop_loader(session), StopLoaderService)
     assert isinstance(deps.get_trip_loader(session), TripLoaderService)
     assert isinstance(deps.get_nearby_stop_loader(session), NearbyStopLoaderService)
+    assert isinstance(
+        deps.get_route_geometry_loader(session), RouteGeometryLoaderService
+    )
 
 
 async def test_require_admin_session_missing_token_raises():

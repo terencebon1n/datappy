@@ -8,6 +8,7 @@ import 'package:frontend/application/alert/cubit.dart';
 import 'package:frontend/application/theme/cubit.dart';
 import 'package:frontend/application/favorites/cubit.dart';
 import 'package:frontend/application/nearby/cubit.dart';
+import 'package:frontend/application/vehicle_map/cubit.dart';
 import 'package:frontend/presentation/theme/colors.dart';
 import 'package:frontend/presentation/funnel/funnel_colors.dart';
 
@@ -57,6 +58,7 @@ class TestCubits {
     ThemeCubit? theme,
     FavoritesCubit? favorites,
     NearbyCubit? nearby,
+    VehicleMapCubit? vehicleMap,
   })  : routeSelection = routeSelection ??
             RouteSelectionCubit(
               cityRepo: FakeCityRepo(),
@@ -83,6 +85,11 @@ class TestCubits {
             NearbyCubit(
               nearbyRepo: FakeNearbyStopRepo(),
               location: FakeLocationProvider(),
+            ),
+        vehicleMap = vehicleMap ??
+            VehicleMapCubit(
+              vehicleRepo: FakeVehiclePositionRepo(),
+              geometryRepo: FakeRouteGeometryRepo(),
             );
 
   final RouteSelectionCubit routeSelection;
@@ -91,6 +98,7 @@ class TestCubits {
   final ThemeCubit theme;
   final FavoritesCubit favorites;
   final NearbyCubit nearby;
+  final VehicleMapCubit vehicleMap;
 
   Future<void> close() async {
     await routeSelection.close();
@@ -99,6 +107,7 @@ class TestCubits {
     await theme.close();
     await favorites.close();
     await nearby.close();
+    await vehicleMap.close();
   }
 }
 
@@ -120,6 +129,7 @@ Future<TestCubits> pumpApp(
         BlocProvider.value(value: c.theme),
         BlocProvider.value(value: c.favorites),
         BlocProvider.value(value: c.nearby),
+        BlocProvider.value(value: c.vehicleMap),
       ],
       child: MaterialApp(theme: theme, home: home),
     ),

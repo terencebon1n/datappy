@@ -5,9 +5,16 @@ import pytest
 from backend.api.dependencies import (
     get_alert_feed,
     get_nearby_stop_loader,
+    get_route_geometry_loader,
     get_route_loader,
     get_stop_loader,
     get_trip_loader,
+)
+from backend.application.dto.geometry import (
+    PointDTO,
+    RouteGeometryDTO,
+    RouteShapeDTO,
+    RouteStopDTO,
 )
 from backend.application.dto.route import ConveyanceDTO
 from backend.application.dto.stop import NearbyStopDTO, StopNameDTO
@@ -212,3 +219,53 @@ def test_get_alerts_without_stop_or_direction(app, client):
 def test_get_alerts_requires_route_id(client):
     response = client.get("/alerts", params={"city": "montpellier"})
     assert response.status_code == 422
+
+
+def test_get_route_geometry(app, client):
+    loader = MagicMock()
+    loader.get_route_geometry = AsyncMock(
+        return_value=RouteGeometryDTO(
+            shapes=[
+                RouteShapeDTO(
+                    direction_id=0,
+                    points=[
+                        PointDTO(latitude=43.60, longitude=3.87),
+                        PointDTO(latitude=43.61, longitude=3.88),
+                    ],
+                )
+            ],
+            stops=[
+                RouteStopDTO(
+                    id="s1", name="Comédie", latitude=43.6085, longitude=3.8794
+                )
+            ],
+        )
+    )
+    app.dependency_overrides[get_route_geometry_loader] = lambda: loader
+
+    response = client.get(
+        "/route-geometry", params={"route_id": "r1"}, headers=_CITY_HEADER
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["shapes"][0]["direction_id"] == 0
+    assert len(body["shapes"][0]["points"]) == 2
+    assert body["stops"][0]["name"] == "Comédie"
+    loader.get_route_geometry.assert_awaited_once_with("r1")
+
+
+def test_get_route_geometry_requires_city_header(client):
+    response = client.get("/route-geometry", params={"route_id": "r1"})
+    assert response.status_code == 400
+
+
+def test_get_route_geometry_requires_route_id(app, client):
+    loader = MagicMock()
+    loader.get_route_geometry = AsyncMock(return_value=None)
+    app.dependency_overrides[get_route_geometry_loader] = lambda: loader
+
+    response = client.get("/route-geometry", headers=_CITY_HEADER)
+
+    assert response.status_code == 422
+    loader.get_route_geometry.assert_not_awaited()

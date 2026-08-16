@@ -10,6 +10,9 @@ from backend.application.services.admin.auth import AdminAuthService
 from backend.application.services.admin.process_manager import ProcessManagerService
 from backend.application.services.api.alert_feed import AlertFeedService
 from backend.application.services.api.nearby_stop_loader import NearbyStopLoaderService
+from backend.application.services.api.route_geometry_loader import (
+    RouteGeometryLoaderService,
+)
 from backend.application.services.api.route_loader import RouteLoaderService
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.trip_loader import TripLoaderService
@@ -20,6 +23,7 @@ from backend.infrastructure.auth.session import SessionManager
 from backend.infrastructure.config import settings
 from backend.infrastructure.database.postgres.manager import PostgresDatabaseManager
 from backend.infrastructure.database.postgres.repositories.route import RouteRepository
+from backend.infrastructure.database.postgres.repositories.shape import ShapeRepository
 from backend.infrastructure.database.postgres.repositories.stop import StopRepository
 from backend.infrastructure.database.postgres.repositories.trip import TripRepository
 from backend.infrastructure.database.redis.repositories.alert import AlertRepository
@@ -79,6 +83,10 @@ def get_stop_loader(session: GtfsSession) -> StopLoaderService:
 
 def get_nearby_stop_loader(session: GtfsSession) -> NearbyStopLoaderService:
     return NearbyStopLoaderService(StopRepository(session))
+
+
+def get_route_geometry_loader(session: GtfsSession) -> RouteGeometryLoaderService:
+    return RouteGeometryLoaderService(ShapeRepository(session), StopRepository(session))
 
 
 def get_trip_loader(session: GtfsSession) -> TripLoaderService:

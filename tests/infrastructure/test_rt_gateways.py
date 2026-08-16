@@ -6,6 +6,7 @@ from google.transit import gtfs_realtime_pb2 as pb
 
 import backend.infrastructure.external.rt.alert as alert_module
 import backend.infrastructure.external.rt.trip_update as tu_module
+import backend.infrastructure.external.rt.vehicle_position as vp_module
 from backend.domain.gtfs_rt.enums import AlertCause, AlertEffect, AlertSeverity
 from backend.infrastructure.external.rt.alert import AlertGateway
 from backend.infrastructure.external.rt.trip_update import TripUpdateGateway
@@ -183,3 +184,21 @@ def test_vehicle_position_parse_feed():
     assert positions[0].position.bearing == 90
     assert positions[0].current_status == "IN_TRANSIT_TO"
     assert positions[0].timestamp == 123
+
+
+async def test_vehicle_position_fetch_rt():
+    response = MagicMock()
+    response.raise_for_status = MagicMock()
+    response.content = b"vehicle-bytes"
+    client = MagicMock()
+    client.get = AsyncMock(return_value=response)
+    async_client = MagicMock()
+    async_client.__aenter__ = AsyncMock(return_value=client)
+    async_client.__aexit__ = AsyncMock(return_value=None)
+
+    with patch.object(vp_module.httpx, "AsyncClient", return_value=async_client):
+        data = await VehiclePositionGateway().fetch_rt("http://feed")
+
+    assert data == b"vehicle-bytes"
+    client.get.assert_awaited_once_with("http://feed")
+    response.raise_for_status.assert_called_once()

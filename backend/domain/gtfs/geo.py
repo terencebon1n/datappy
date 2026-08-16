@@ -41,9 +41,6 @@ class Coordinates(BaseModel):
             else math.degrees(radius_meters / (EARTH_RADIUS_METERS * cos_latitude))
         )
 
-        # Near a pole or across the antimeridian the box would have to wrap, so
-        # widen it to every longitude instead. It only pre-filters candidates —
-        # `distance_to` is what actually decides whether a stop is in range.
         wraps_longitude = (
             self.longitude - longitude_span < -180.0
             or self.longitude + longitude_span > 180.0

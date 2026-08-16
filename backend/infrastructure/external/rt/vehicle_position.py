@@ -1,5 +1,6 @@
 from typing import List
 
+import httpx
 from google.transit import gtfs_realtime_pb2
 
 from backend.domain.gtfs_rt.trip import Trip
@@ -7,6 +8,12 @@ from backend.domain.gtfs_rt.vehicle_position import Position, VehiclePosition
 
 
 class VehiclePositionGateway:
+    async def fetch_rt(self, url: str) -> bytes:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.content
+
     def parse_feed(self, payload: bytes) -> List[VehiclePosition]:
         feed = gtfs_realtime_pb2.FeedMessage()
         feed.ParseFromString(payload)

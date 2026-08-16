@@ -30,6 +30,25 @@ class StopRepository(AsyncQueryRepository[StopModel]):
 
         return result.scalars().all()
 
+    async def get_route_stops(self, route_id: str) -> Sequence[Row]:
+        query = (
+            select(
+                self.model.id,
+                self.model.name,
+                self.model.latitude,
+                self.model.longitude,
+            )
+            .join(StopTimeModel, StopTimeModel.stop_id == self.model.id)
+            .join(TripModel, StopTimeModel.trip_id == TripModel.id)
+            .where(TripModel.route_id == route_id)
+            .order_by(self.model.name)
+            .distinct()
+        )
+
+        result = await self.execute_select(query)
+
+        return result.all()
+
     async def get_nearby_stops(self, box: BoundingBox) -> Sequence[Row]:
         query = (
             select(

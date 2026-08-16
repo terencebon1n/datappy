@@ -8,6 +8,7 @@ from backend.domain.gtfs_rt.alert import Alert
 from backend.domain.gtfs_rt.enums import City
 from backend.domain.gtfs_rt.stop_update import StopUpdate
 from backend.domain.gtfs_rt.trip_update import TripUpdate
+from backend.domain.gtfs_rt.vehicle_position import VehiclePosition
 
 
 class ConveyanceReader(Protocol):
@@ -66,6 +67,26 @@ class AlertSource(Protocol):
     async def fetch_rt(self, url: str) -> bytes: ...
 
     def parse_feed(self, payload: bytes) -> list[Alert]: ...
+
+
+class VehiclePositionSource(Protocol):
+    async def fetch_rt(self, url: str) -> bytes: ...
+
+    def parse_feed(self, payload: bytes) -> list[VehiclePosition]: ...
+
+
+class VehiclePositionReader(Protocol):
+    async def get_vehicle_positions(
+        self, city: City, route_id: str
+    ) -> list[VehiclePosition]: ...
+
+
+class RouteGeometryReader(Protocol):
+    async def get_route_shapes(self, route_id: str) -> Sequence[Any]: ...
+
+
+class RouteStopReader(Protocol):
+    async def get_route_stops(self, route_id: str) -> Sequence[Any]: ...
 
 
 class MessageProducer(Protocol):

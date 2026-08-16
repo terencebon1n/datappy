@@ -8,7 +8,7 @@ import '../../helpers/fakes.dart';
 import '../../helpers/pump.dart';
 
 void main() {
-  testWidgets('reports home and favorites taps', (tester) async {
+  testWidgets('reports home, favorites and map taps', (tester) async {
     int? tapped;
     final cubits = TestCubits();
     addTearDown(cubits.close);
@@ -23,6 +23,21 @@ void main() {
     expect(tapped, 0);
     await tester.tap(find.text('Favoris'));
     expect(tapped, 1);
+    await tester.tap(find.text('Carte'));
+    expect(tapped, 2);
+  });
+
+  testWidgets('highlights the map tab when it is active', (tester) async {
+    final cubits = TestCubits();
+    addTearDown(cubits.close);
+
+    await pumpApp(
+      tester,
+      BottomNav(index: 2, onTap: (_) {}),
+      cubits: cubits,
+    );
+
+    expect(find.byIcon(Icons.map_rounded), findsOneWidget);
   });
 
   testWidgets('theme button reflects the mode and flips it on tap', (tester) async {

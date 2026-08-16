@@ -8,6 +8,7 @@ import pytest
 
 from backend.domain.gtfs.geo import Coordinates
 from backend.infrastructure.database.postgres.repositories.route import RouteRepository
+from backend.infrastructure.database.postgres.repositories.shape import ShapeRepository
 from backend.infrastructure.database.postgres.repositories.stop import StopRepository
 from backend.infrastructure.database.postgres.repositories.stop_time import (
     StopTimeRepository,
@@ -123,3 +124,36 @@ async def test_trip_get_direction_not_found_raises():
 
     with pytest.raises(Exception, match="No direction found"):
         await repo.get_direction("r1", "Origin", "Dest")
+
+
+async def test_shape_get_route_shapes_picks_the_longest_per_direction():
+    result = MagicMock()
+    result.all.return_value = [
+        SimpleNamespace(direction_id=0, latitude=43.6, longitude=3.87)
+    ]
+    session = _session_returning(result)
+    repo = ShapeRepository(session)
+
+    rows = await repo.get_route_shapes("r1")
+
+    assert rows[0].direction_id == 0
+    compiled = str(session.execute.await_args.args[0])
+    assert "row_number() OVER" in compiled
+    assert "count(*)" in compiled
+    assert "ORDER BY" in compiled
+
+
+async def test_stop_get_route_stops():
+    result = MagicMock()
+    result.all.return_value = [
+        SimpleNamespace(id="s1", name="Comédie", latitude=43.6, longitude=3.87)
+    ]
+    session = _session_returning(result)
+    repo = StopRepository(session)
+
+    rows = await repo.get_route_stops("r1")
+
+    assert rows[0].name == "Comédie"
+    compiled = str(session.execute.await_args.args[0])
+    assert "DISTINCT" in compiled
+    assert "trip.route_id" in compiled

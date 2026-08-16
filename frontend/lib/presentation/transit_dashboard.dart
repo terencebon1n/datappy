@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/application/route_selection/cubit.dart';
 import 'package:frontend/application/stop_update/cubit.dart';
 import 'package:frontend/application/alert/cubit.dart';
+import 'package:frontend/application/vehicle_map/cubit.dart';
 import 'package:frontend/domain/saved_selection.dart';
 import 'package:frontend/domain/transit_path.dart';
 import 'package:frontend/presentation/theme/colors.dart';
@@ -18,6 +19,7 @@ import 'package:frontend/presentation/widgets/bottom_nav.dart';
 import 'package:frontend/presentation/widgets/footer_hint.dart';
 import 'package:frontend/presentation/favorites/favorites_page.dart';
 import 'package:frontend/presentation/funnel/funnel_page.dart';
+import 'package:frontend/presentation/map/vehicle_map_page.dart';
 
 class TransitDashboard extends StatefulWidget {
   const TransitDashboard({super.key});
@@ -64,12 +66,13 @@ class _TransitDashboardState extends State<TransitDashboard> {
             children: [
               _buildHome(),
               FavoritesPage(onSelect: _loadFavorite),
+              const VehicleMapPage(),
             ],
           ),
         ),
         bottomNavigationBar: BottomNav(
           index: _navIndex,
-          onTap: (i) => setState(() => _navIndex = i),
+          onTap: _onNavTap,
         ),
       ),
     );
@@ -97,6 +100,21 @@ class _TransitDashboardState extends State<TransitDashboard> {
         ),
       ],
     );
+  }
+
+  void _onNavTap(int index) {
+    setState(() => _navIndex = index);
+    if (index == 2) _watchVehicles();
+  }
+
+  void _watchVehicles() {
+    final selection = context.read<RouteSelectionCubit>().state;
+    if (!selection.canSubmit) return;
+    context.read<VehicleMapCubit>().watch(TransitPath(
+          city: selection.selectedCity!.name.toLowerCase(),
+          routeId: selection.selectedConveyance!.id,
+          direction: selection.direction!,
+        ));
   }
 
   void _loadFavorite(SavedSelection fav) {

@@ -12,6 +12,8 @@ import 'package:frontend/domain/repositories/i_theme_store.dart' show IThemeStor
 import 'package:frontend/domain/repositories/i_favorites_store.dart' show IFavoritesStore;
 import 'package:frontend/domain/repositories/i_nearby_stop.dart' show INearbyStopRepository;
 import 'package:frontend/domain/repositories/i_location.dart' show ILocationProvider;
+import 'package:frontend/domain/repositories/i_vehicle_position.dart' show IVehiclePositionRepository;
+import 'package:frontend/domain/repositories/i_route_geometry.dart' show IRouteGeometryRepository;
 
 import 'package:frontend/infrastructure/backend/repositories/city.dart' show CityRepository;
 import 'package:frontend/infrastructure/backend/repositories/conveyance.dart' show ConveyanceRepository;
@@ -21,6 +23,8 @@ import 'package:frontend/infrastructure/backend/repositories/stop_update.dart' s
 import 'package:frontend/infrastructure/backend/repositories/alert.dart' show AlertRepository;
 import 'package:frontend/infrastructure/backend/repositories/nearby_stop.dart' show NearbyStopRepository;
 import 'package:frontend/infrastructure/device/location.dart' show GeolocatorLocationProvider;
+import 'package:frontend/infrastructure/backend/repositories/vehicle_position.dart' show VehiclePositionRepository;
+import 'package:frontend/infrastructure/backend/repositories/route_geometry.dart' show RouteGeometryRepository;
 import 'package:frontend/infrastructure/local/selection_store.dart' show SharedPrefsSelectionStore;
 import 'package:frontend/infrastructure/local/theme_store.dart' show SharedPrefsThemeStore;
 import 'package:frontend/infrastructure/local/favorites_store.dart' show SharedPrefsFavoritesStore;
@@ -28,6 +32,7 @@ import 'package:frontend/infrastructure/local/favorites_store.dart' show SharedP
 import 'package:frontend/application/stop_update/cubit.dart' show StopUpdateCubit;
 import 'package:frontend/application/alert/cubit.dart' show AlertCubit;
 import 'package:frontend/application/nearby/cubit.dart' show NearbyCubit;
+import 'package:frontend/application/vehicle_map/cubit.dart' show VehicleMapCubit;
 import 'package:frontend/application/route_selection/cubit.dart' show RouteSelectionCubit;
 import 'package:frontend/application/favorites/cubit.dart' show FavoritesCubit;
 import 'package:frontend/application/theme/cubit.dart' show ThemeCubit, resolveIsDark;
@@ -49,6 +54,8 @@ Widget buildDatappyApp({
     required IAlertRepository alertRepo,
     required INearbyStopRepository nearbyRepo,
     required ILocationProvider location,
+    required IVehiclePositionRepository vehicleRepo,
+    required IRouteGeometryRepository geometryRepo,
     required ThemeMode initialThemeMode,
 }) {
     return MultiBlocProvider(
@@ -78,6 +85,10 @@ Widget buildDatappyApp({
             BlocProvider(create: (context) => NearbyCubit(
                 nearbyRepo: nearbyRepo,
                 location: location,
+            )),
+            BlocProvider(create: (context) => VehicleMapCubit(
+                vehicleRepo: vehicleRepo,
+                geometryRepo: geometryRepo,
             )),
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
@@ -117,6 +128,8 @@ Future<void> main() async {
         alertRepo: AlertRepository(apiBase: DatappyConfig.apiBase),
         nearbyRepo: NearbyStopRepository(apiBase: DatappyConfig.apiBase),
         location: GeolocatorLocationProvider(),
+        vehicleRepo: VehiclePositionRepository(wsBase: DatappyConfig.wsBase),
+        geometryRepo: RouteGeometryRepository(apiBase: DatappyConfig.apiBase),
         initialThemeMode: themeStore.load() ?? ThemeMode.system,
     ));
 }

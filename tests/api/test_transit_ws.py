@@ -58,3 +58,47 @@ def test_ws_stop_updates_closes_on_feed_error(client):
         with client.websocket_connect(_WS_URL):
             _ORIGINAL_TIME_SLEEP(0.2)  # let produce hit the error branch
         feed_cls.return_value.get_updates.assert_awaited()
+
+
+_VEHICLE_WS_URL = "/vehicle-positions?city=montpellier&route_id=r1"
+
+
+def _vehicle_position():
+    from backend.domain.gtfs_rt.trip import Trip
+    from backend.domain.gtfs_rt.vehicle_position import Position, VehiclePosition
+
+    return VehiclePosition(
+        id="v1",
+        trip=Trip(id="t1", schedule_relationship=0, route_id="r1", direction_id=0),
+        position=Position(latitude=43.6, longitude=3.87, bearing=90, speed=12),
+        current_status="IN_TRANSIT_TO",
+        timestamp=1700000000,
+    )
+
+
+def test_ws_vehicle_positions_streams_then_disconnects(client):
+    with (
+        patch.object(transit, "VehiclePositionFeed") as feed_cls,
+        patch.object(transit.asyncio, "sleep", new=_yield_sleep),
+    ):
+        feed_cls.return_value.get_positions = AsyncMock(
+            return_value=[_vehicle_position()]
+        )
+        with client.websocket_connect(_VEHICLE_WS_URL) as ws:
+            message = ws.receive_json()
+            assert message[0]["id"] == "v1"
+            assert message[0]["latitude"] == 43.6
+            assert message[0]["bearing"] == 90
+
+
+def test_ws_vehicle_positions_closes_on_feed_error(client):
+    with (
+        patch.object(transit, "VehiclePositionFeed") as feed_cls,
+        patch.object(transit.asyncio, "sleep", new=_yield_sleep),
+    ):
+        feed_cls.return_value.get_positions = AsyncMock(
+            side_effect=RuntimeError("redis down")
+        )
+        with client.websocket_connect(_VEHICLE_WS_URL):
+            _ORIGINAL_TIME_SLEEP(0.2)
+        feed_cls.return_value.get_positions.assert_awaited()

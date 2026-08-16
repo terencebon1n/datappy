@@ -8,6 +8,8 @@ import 'package:frontend/domain/direction.dart';
 import 'package:frontend/domain/path.dart';
 import 'package:frontend/domain/coordinates.dart';
 import 'package:frontend/domain/nearby_stop.dart';
+import 'package:frontend/domain/route_geometry.dart';
+import 'package:frontend/domain/vehicle_position.dart';
 import 'package:frontend/domain/stop_update.dart';
 import 'package:frontend/domain/alert.dart';
 import 'package:frontend/domain/transit_path.dart';
@@ -18,6 +20,8 @@ import 'package:frontend/domain/repositories/i_direction.dart';
 import 'package:frontend/domain/repositories/i_stop_name.dart';
 import 'package:frontend/domain/repositories/i_location.dart';
 import 'package:frontend/domain/repositories/i_nearby_stop.dart';
+import 'package:frontend/domain/repositories/i_route_geometry.dart';
+import 'package:frontend/domain/repositories/i_vehicle_position.dart';
 import 'package:frontend/domain/repositories/i_stop_update.dart';
 import 'package:frontend/domain/repositories/i_alert.dart';
 import 'package:frontend/domain/repositories/i_selection_store.dart';
@@ -264,5 +268,82 @@ class FakeLocationProvider implements ILocationProvider {
     if (gate != null) await gate;
     if (throwError) throw Exception('location boom');
     return coordinates;
+  }
+}
+
+VehiclePosition sampleVehiclePosition({
+  String id = 'v1',
+  double latitude = 43.6085,
+  double longitude = 3.8794,
+  int bearing = 90,
+}) =>
+    VehiclePosition(
+      id: id,
+      tripId: 'trip-1',
+      routeId: 'T1',
+      directionId: 0,
+      latitude: latitude,
+      longitude: longitude,
+      bearing: bearing,
+      speed: 12,
+      currentStatus: 'IN_TRANSIT_TO',
+      timestamp: 1700000000,
+    );
+
+RouteGeometry sampleRouteGeometry({
+  List<RouteShape>? shapes,
+  List<RouteStop>? stops,
+}) =>
+    RouteGeometry(
+      shapes: shapes ??
+          const [
+            RouteShape(directionId: 0, points: [
+              Coordinates(latitude: 43.60, longitude: 3.87),
+              Coordinates(latitude: 43.61, longitude: 3.88),
+            ]),
+          ],
+      stops: stops ??
+          const [
+            RouteStop(
+              id: 's1',
+              name: 'Comédie',
+              latitude: 43.6085,
+              longitude: 3.8794,
+            ),
+          ],
+    );
+
+class FakeVehiclePositionRepo implements IVehiclePositionRepository {
+  FakeVehiclePositionRepo({this.throwOnSubscribe = false});
+  final bool throwOnSubscribe;
+  final StreamController<List<VehiclePosition>> controller =
+      StreamController<List<VehiclePosition>>.broadcast();
+  final List<TransitPath> calls = [];
+
+  @override
+  Stream<List<VehiclePosition>> watchVehiclePositions(TransitPath transitPath) {
+    calls.add(transitPath);
+    if (throwOnSubscribe) throw Exception('socket boom');
+    return controller.stream;
+  }
+}
+
+class FakeRouteGeometryRepo implements IRouteGeometryRepository {
+  FakeRouteGeometryRepo({
+    RouteGeometry? geometry,
+    this.throwError = false,
+    this.gate,
+  }) : geometry = geometry ?? sampleRouteGeometry();
+  final RouteGeometry geometry;
+  final bool throwError;
+  final Future<void>? gate;
+  final List<String> calls = [];
+
+  @override
+  Future<RouteGeometry> resolveRouteGeometry(String routeId, City city) async {
+    calls.add(routeId);
+    if (gate != null) await gate;
+    if (throwError) throw Exception('geometry boom');
+    return geometry;
   }
 }

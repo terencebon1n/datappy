@@ -4,9 +4,15 @@ import logging
 from backend.application.producers.alert import AlertIngestorService
 from backend.application.producers.registry import ProducerRegistry, ProducerTask
 from backend.application.producers.trip_update import TripIngestorService
+from backend.application.producers.vehicle_position import (
+    VehiclePositionIngestorService,
+)
 from backend.domain.gtfs_rt.enums import City, FeedType
 from backend.infrastructure.external.rt.alert import AlertGateway
 from backend.infrastructure.external.rt.trip_update import TripUpdateGateway
+from backend.infrastructure.external.rt.vehicle_position import (
+    VehiclePositionGateway,
+)
 from backend.infrastructure.messaging.kafka_admin import KafkaAdminTool
 from backend.infrastructure.messaging.kafka_producer import KafkaProducerAdapter
 
@@ -22,10 +28,14 @@ class ProducerService:
         admin = KafkaAdminTool()
         trip_service = TripIngestorService(TripUpdateGateway(), kafka)
         alert_service = AlertIngestorService(AlertGateway(), kafka)
+        vehicle_service = VehiclePositionIngestorService(
+            VehiclePositionGateway(), kafka
+        )
 
         ingestors = {
             FeedType.TRIP_UPDATE: trip_service.run,
             FeedType.ALERT: alert_service.run,
+            FeedType.VEHICLE_POSITION: vehicle_service.run,
         }
 
         await admin.ensure_topics([f.topic(city) for f in FeedType])

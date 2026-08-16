@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:frontend/application/favorites/cubit.dart';
 import 'package:frontend/application/route_selection/cubit.dart';
+import 'package:frontend/application/vehicle_map/cubit.dart';
 import 'package:frontend/presentation/funnel/funnel_page.dart';
 import 'package:frontend/presentation/transit_dashboard.dart';
 import 'package:frontend/presentation/widgets/top_bar.dart';
@@ -104,6 +105,55 @@ void main() {
 
     harness.cubit.stop();
     cubits.alert.stop();
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the map tab starts watching vehicles for the selection',
+      (tester) async {
+    final route = _route();
+    final vehicles = FakeVehiclePositionRepo();
+    final geometry = FakeRouteGeometryRepo();
+    final vehicleMap =
+        VehicleMapCubit(vehicleRepo: vehicles, geometryRepo: geometry);
+    final cubits = TestCubits(routeSelection: route, vehicleMap: vehicleMap);
+    addTearDown(cubits.close);
+
+    await setUpAsync(tester, () async {
+      await route.loadSelection(sampleSelection());
+      return true;
+    });
+
+    await pumpApp(tester, const TransitDashboard(), cubits: cubits);
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.map_rounded));
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+
+    expect(geometry.calls, ['T1']);
+    expect(vehicles.calls.single.routeId, 'T1');
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the map tab does nothing without a complete selection',
+      (tester) async {
+    final geometry = FakeRouteGeometryRepo();
+    final vehicleMap = VehicleMapCubit(
+      vehicleRepo: FakeVehiclePositionRepo(),
+      geometryRepo: geometry,
+    );
+    final cubits = TestCubits(vehicleMap: vehicleMap);
+    addTearDown(cubits.close);
+
+    await pumpApp(tester, const TransitDashboard(), cubits: cubits);
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.map_rounded));
+    await tester.pump();
+
+    expect(geometry.calls, isEmpty);
+
     await tester.pumpWidget(const SizedBox());
   });
 }
