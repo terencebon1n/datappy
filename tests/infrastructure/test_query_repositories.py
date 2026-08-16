@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from backend.domain.gtfs.geo import Coordinates
 from backend.infrastructure.database.postgres.repositories.route import RouteRepository
 from backend.infrastructure.database.postgres.repositories.stop import StopRepository
 from backend.infrastructure.database.postgres.repositories.stop_time import (
@@ -38,6 +39,33 @@ async def test_stop_get_stop_names():
     repo = StopRepository(_session_returning(result))
 
     assert await repo.get_stop_names("r1") == ["Gare", "Comédie"]
+
+
+async def test_stop_get_nearby_stops():
+    result = MagicMock()
+    result.all.return_value = [
+        SimpleNamespace(
+            name="Comédie",
+            latitude=43.6,
+            longitude=3.87,
+            route_id="r1",
+            short_name="1",
+            long_name="L1",
+            color="c",
+            type=0,
+        )
+    ]
+    session = _session_returning(result)
+    repo = StopRepository(session)
+    box = Coordinates(latitude=43.6, longitude=3.87).bounding_box(800)
+
+    rows = await repo.get_nearby_stops(box)
+
+    assert rows[0].name == "Comédie"
+    compiled = str(session.execute.await_args.args[0])
+    assert "stop.latitude BETWEEN" in compiled
+    assert "stop.longitude BETWEEN" in compiled
+    assert "DISTINCT" in compiled
 
 
 async def test_stop_time_get_reachable_trip_ids():

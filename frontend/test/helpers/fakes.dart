@@ -6,6 +6,8 @@ import 'package:frontend/domain/city.dart';
 import 'package:frontend/domain/conveyance.dart';
 import 'package:frontend/domain/direction.dart';
 import 'package:frontend/domain/path.dart';
+import 'package:frontend/domain/coordinates.dart';
+import 'package:frontend/domain/nearby_stop.dart';
 import 'package:frontend/domain/stop_update.dart';
 import 'package:frontend/domain/alert.dart';
 import 'package:frontend/domain/transit_path.dart';
@@ -14,6 +16,8 @@ import 'package:frontend/domain/repositories/i_city.dart';
 import 'package:frontend/domain/repositories/i_conveyance.dart';
 import 'package:frontend/domain/repositories/i_direction.dart';
 import 'package:frontend/domain/repositories/i_stop_name.dart';
+import 'package:frontend/domain/repositories/i_location.dart';
+import 'package:frontend/domain/repositories/i_nearby_stop.dart';
 import 'package:frontend/domain/repositories/i_stop_update.dart';
 import 'package:frontend/domain/repositories/i_alert.dart';
 import 'package:frontend/domain/repositories/i_selection_store.dart';
@@ -110,9 +114,8 @@ class FakeDirectionRepo implements IDirectionRepository {
       : direction = direction ?? sampleDirection();
   final Direction direction;
   final bool throwError;
-  int calls = 0;
-
   final Future<void>? gate;
+  int calls = 0;
 
   @override
   Future<Direction> resolveDirection(Path path, City city) async {
@@ -200,5 +203,66 @@ class FakeAlertRepo implements IAlertRepository {
     calls.add(transitPath);
     if (throwError) throw Exception('alert boom');
     return alerts;
+  }
+}
+
+NearbyStop sampleNearbyStop({
+  String name = 'Comédie',
+  int distanceMeters = 124,
+  double latitude = 43.6085,
+  double longitude = 3.8794,
+  List<Conveyance>? routes,
+}) =>
+    NearbyStop(
+      name: name,
+      distanceMeters: distanceMeters,
+      latitude: latitude,
+      longitude: longitude,
+      routes: routes ?? [sampleConveyance()],
+    );
+
+class FakeNearbyStopRepo implements INearbyStopRepository {
+  FakeNearbyStopRepo({this.stops = const [], this.throwError = false, this.gate});
+  final List<NearbyStop> stops;
+  final bool throwError;
+  final Future<void>? gate;
+  final List<Coordinates> calls = [];
+  int? lastRadiusMeters;
+
+  @override
+  Future<List<NearbyStop>> resolveNearbyStops(
+    Coordinates coordinates,
+    City city, {
+    int radiusMeters = 800,
+  }) async {
+    calls.add(coordinates);
+    lastRadiusMeters = radiusMeters;
+    if (gate != null) await gate;
+    if (throwError) throw Exception('nearby boom');
+    return stops;
+  }
+}
+
+class FakeLocationProvider implements ILocationProvider {
+  FakeLocationProvider({
+    this.permission = LocationPermissionStatus.granted,
+    Coordinates? coordinates,
+    this.throwError = false,
+    this.gate,
+  }) : coordinates =
+            coordinates ?? const Coordinates(latitude: 43.6085, longitude: 3.8794);
+  final LocationPermissionStatus permission;
+  final Coordinates coordinates;
+  final bool throwError;
+  final Future<void>? gate;
+
+  @override
+  Future<LocationPermissionStatus> ensurePermission() async => permission;
+
+  @override
+  Future<Coordinates> currentCoordinates() async {
+    if (gate != null) await gate;
+    if (throwError) throw Exception('location boom');
+    return coordinates;
   }
 }

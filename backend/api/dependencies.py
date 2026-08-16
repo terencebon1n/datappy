@@ -9,6 +9,7 @@ from backend.api.v1.context import require_city
 from backend.application.services.admin.auth import AdminAuthService
 from backend.application.services.admin.process_manager import ProcessManagerService
 from backend.application.services.api.alert_feed import AlertFeedService
+from backend.application.services.api.nearby_stop_loader import NearbyStopLoaderService
 from backend.application.services.api.route_loader import RouteLoaderService
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.trip_loader import TripLoaderService
@@ -74,6 +75,10 @@ def get_route_loader(session: GtfsSession) -> RouteLoaderService:
 
 def get_stop_loader(session: GtfsSession) -> StopLoaderService:
     return StopLoaderService(StopRepository(session))
+
+
+def get_nearby_stop_loader(session: GtfsSession) -> NearbyStopLoaderService:
+    return NearbyStopLoaderService(StopRepository(session))
 
 
 def get_trip_loader(session: GtfsSession) -> TripLoaderService:

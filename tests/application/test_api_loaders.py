@@ -5,6 +5,7 @@ from backend.application.dto.trip import PathDTO
 from backend.application.services.api.route_loader import RouteLoaderService
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.trip_loader import TripLoaderService
+from backend.domain.enums import route_type_name
 
 
 async def test_route_loader_maps_conveyances_and_type_names():
@@ -27,9 +28,9 @@ async def test_route_loader_maps_conveyances_and_type_names():
     assert result[1].type_name == "Autre"  # unknown type -> fallback
 
 
-def test_route_loader_type_name_helper():
-    assert RouteLoaderService._type_name(3) == "Bus"
-    assert RouteLoaderService._type_name(12345) == "Autre"
+def test_route_type_name_helper():
+    assert route_type_name(3) == "Bus"
+    assert route_type_name(12345) == "Autre"
 
 
 async def test_stop_loader_maps_names():

@@ -12,6 +12,7 @@
 
 * 🔴 Départs temps réel poussés en direct (WebSocket) et repli sur l'horaire planifié.
 * ⚠️ Alertes trafic (GTFS-RT `Alert`) affichées sous la liste des départs, filtrées sur la ligne, la direction et l'arrêt sélectionnés.
+* 📍 **Autour de moi** : géolocalisation de l'utilisateur pour lister les arrêts les plus proches (regroupés par nom, avec les lignes qui les desservent) et sauter directement au choix de la destination.
 * ⭐ Favoris avec réordonnancement par glisser-déposer, persistance de la dernière recherche.
 * 🌙 Mode sombre.
 * 🏙️ Multi-villes : **Montpellier**, **Bordeaux**, **Toulouse**, **Nîmes**.
@@ -30,6 +31,11 @@ Le backend suit une architecture **DDD** (Domain-Driven Design) et les principes
 | `backend/infrastructure` | Adaptateurs techniques : PostgreSQL (SQLAlchemy), Redis, Kafka, QuixStreams, Docker, OAuth Google, lecture des flux GTFS/GTFS-RT. |
 | `backend/api` | Exposition HTTP/WebSocket via FastAPI (routeurs et endpoints v1). |
 | `frontend` | Application mobile **Flutter** + interface web d'administration (Nginx). |
+
+> La recherche d'arrêts proches s'appuie sur `backend/domain/gtfs/geo.py` : le
+> dépôt pré-filtre les arrêts sur une *bounding box* (index
+> `idx_stop_latitude_longitude_btree`, créé au `populate`), puis la distance
+> haversine du domaine décide de l'inclusion réelle et du tri.
 
 ### Flux de données
 
@@ -71,6 +77,7 @@ L'API est servie sur le port `8000`. Les endpoints de transit attendent l'en-tê
 | `GET` | `/conveyance` | Lignes disponibles pour la ville. |
 | `GET` | `/stop?route_id=…` | Arrêts d'une ligne. |
 | `GET` | `/direction?…` | Direction / itinéraire d'un trajet. |
+| `GET` | `/nearby-stops?latitude=…&longitude=…&radius_m=…&limit=…` | Arrêts les plus proches d'un point, regroupés par nom, avec distance et lignes desservies. `radius_m` vaut 800 m par défaut (max 5000), `limit` 10 (max 50). |
 | `WS` | `/stop-updates?…` | Flux temps réel des prochains départs d'un arrêt. |
 | `GET` | `/alerts?city=…&route_id=…&direction_id=…&stop_id=…` | Alertes trafic GTFS-RT liées à la ligne / direction / arrêt sélectionné. |
 | `GET` | `/admin/login`, `/admin/callback`, `/admin/logout` | Authentification Google OAuth de l'admin. |

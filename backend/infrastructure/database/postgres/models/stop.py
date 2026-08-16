@@ -27,4 +27,10 @@ class StopModel(GTFSModelBase):
 
     __table_args__: Tuple = (
         Index("idx_stop_name_hash", "name", postgresql_using="hash"),
+        Index(
+            "idx_stop_latitude_longitude_btree",
+            "latitude",
+            "longitude",
+            postgresql_using="btree",
+        ),
     )

@@ -7,6 +7,8 @@ const _noExecutableLines = <String>{
   'lib/domain/repositories/i_conveyance.dart',
   'lib/domain/repositories/i_direction.dart',
   'lib/domain/repositories/i_favorites_store.dart',
+  'lib/domain/repositories/i_location.dart',
+  'lib/domain/repositories/i_nearby_stop.dart',
   'lib/domain/repositories/i_selection_store.dart',
   'lib/domain/repositories/i_stop_name.dart',
   'lib/domain/repositories/i_stop_update.dart',

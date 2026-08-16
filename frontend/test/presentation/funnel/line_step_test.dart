@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:frontend/application/nearby/cubit.dart';
 import 'package:frontend/application/route_selection/cubit.dart';
 import 'package:frontend/application/route_selection/state.dart';
 import 'package:frontend/presentation/funnel/funnel_widgets.dart';
@@ -59,5 +60,27 @@ void main() {
 
     expect(route.state.step, FunnelStep.source);
     expect(route.state.stops, const ['A', 'B']);
+  });
+
+  testWidgets('the nearby entry starts a lookup and opens the nearby step',
+      (tester) async {
+    final route = await _atLineStep(tester, conveyances: [sampleConveyance()]);
+    final repo = FakeNearbyStopRepo(stops: [sampleNearbyStop()]);
+    final nearby = NearbyCubit(
+      nearbyRepo: repo,
+      location: FakeLocationProvider(),
+    );
+    final cubits = TestCubits(routeSelection: route, nearby: nearby);
+    addTearDown(cubits.close);
+
+    await pumpApp(tester, const Scaffold(body: LineStep()), cubits: cubits);
+    await tester.pump();
+
+    await tester.tap(find.text('Autour de moi'));
+    await tester.pump();
+
+    expect(route.state.step, FunnelStep.nearby);
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    expect(repo.calls, hasLength(1));
   });
 }

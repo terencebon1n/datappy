@@ -1,13 +1,16 @@
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from backend.api.dependencies import (
     get_alert_feed,
+    get_nearby_stop_loader,
     get_route_loader,
     get_stop_loader,
     get_trip_loader,
 )
 from backend.application.dto.route import ConveyanceDTO
-from backend.application.dto.stop import StopNameDTO
+from backend.application.dto.stop import NearbyStopDTO, StopNameDTO
 from backend.application.dto.trip import DirectionDTO
 from backend.domain.gtfs_rt.alert import Alert, InformedEntity
 from backend.domain.gtfs_rt.enums import AlertCause, AlertEffect, AlertSeverity
@@ -57,6 +60,73 @@ def test_get_stops(app, client):
 
     assert response.status_code == 200
     assert response.json() == [{"name": "Gare"}]
+
+
+def test_get_nearby_stops(app, client):
+    loader = MagicMock()
+    loader.get_nearby_stops = AsyncMock(
+        return_value=[
+            NearbyStopDTO(
+                name="Comédie",
+                distance_m=124,
+                latitude=43.6085,
+                longitude=3.8794,
+                routes=[
+                    ConveyanceDTO(
+                        id="r1",
+                        short_name="1",
+                        long_name="L1",
+                        color="FF0000",
+                        type=0,
+                        type_name="Tram",
+                    )
+                ],
+            )
+        ]
+    )
+    app.dependency_overrides[get_nearby_stop_loader] = lambda: loader
+
+    response = client.get(
+        "/nearby-stops",
+        params={"latitude": 43.6085, "longitude": 3.8794, "radius_m": 500},
+        headers=_CITY_HEADER,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body[0]["name"] == "Comédie"
+    assert body[0]["distance_m"] == 124
+    assert body[0]["routes"][0]["short_name"] == "1"
+    assert loader.get_nearby_stops.await_args.args[0].radius_m == 500
+
+
+def test_get_nearby_stops_requires_city_header(client):
+    response = client.get(
+        "/nearby-stops", params={"latitude": 43.6085, "longitude": 3.8794}
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"longitude": 3.8794},
+        {"latitude": 91.0, "longitude": 3.8794},
+        {"latitude": 43.6085, "longitude": 181.0},
+        {"latitude": 43.6085, "longitude": 3.8794, "radius_m": 0},
+        {"latitude": 43.6085, "longitude": 3.8794, "radius_m": 99999},
+        {"latitude": 43.6085, "longitude": 3.8794, "limit": 0},
+    ],
+)
+def test_get_nearby_stops_rejects_invalid_query(app, client, params):
+    loader = MagicMock()
+    loader.get_nearby_stops = AsyncMock(return_value=[])
+    app.dependency_overrides[get_nearby_stop_loader] = lambda: loader
+
+    response = client.get("/nearby-stops", params=params, headers=_CITY_HEADER)
+
+    assert response.status_code == 422
+    loader.get_nearby_stops.assert_not_awaited()
 
 
 def test_get_direction(app, client):

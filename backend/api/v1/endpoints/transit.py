@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import (
     get_alert_feed,
+    get_nearby_stop_loader,
     get_route_loader,
     get_stop_loader,
     get_trip_loader,
@@ -20,9 +21,15 @@ from backend.api.dependencies import (
 )
 from backend.application.dto.alert import AlertDTO, AlertPathDTO
 from backend.application.dto.route import ConveyanceDTO, RouteIdDTO
-from backend.application.dto.stop import StopNameDTO, TransitPathDTO
+from backend.application.dto.stop import (
+    NearbyQueryDTO,
+    NearbyStopDTO,
+    StopNameDTO,
+    TransitPathDTO,
+)
 from backend.application.dto.trip import DirectionDTO, PathDTO
 from backend.application.services.api.alert_feed import AlertFeedService
+from backend.application.services.api.nearby_stop_loader import NearbyStopLoaderService
 from backend.application.services.api.route_loader import RouteLoaderService
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.stop_update_feed import StopUpdateFeed
@@ -63,6 +70,16 @@ async def get_stops(
     stop_loader: Annotated[StopLoaderService, Depends(get_stop_loader)],
 ) -> list[StopNameDTO]:
     return await stop_loader.get_stop_names(selection.route_id)
+
+
+@gtfs_router.get("/nearby-stops", response_model=list[NearbyStopDTO])
+async def get_nearby_stops(
+    selection: Annotated[NearbyQueryDTO, Query()],
+    nearby_stop_loader: Annotated[
+        NearbyStopLoaderService, Depends(get_nearby_stop_loader)
+    ],
+) -> list[NearbyStopDTO]:
+    return await nearby_stop_loader.get_nearby_stops(selection)
 
 
 @gtfs_router.get("/direction", response_model=DirectionDTO)

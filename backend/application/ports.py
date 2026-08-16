@@ -2,6 +2,7 @@ from typing import Any, Iterator, Protocol, Sequence
 
 from backend.domain.admin.process import ManagedProcess, ManagedServiceType
 from backend.domain.gtfs.enums import GTFSFileNames
+from backend.domain.gtfs.geo import BoundingBox
 from backend.domain.gtfs.scheduled_departure import ScheduledDeparture
 from backend.domain.gtfs_rt.alert import Alert
 from backend.domain.gtfs_rt.enums import City
@@ -15,6 +16,10 @@ class ConveyanceReader(Protocol):
 
 class StopNameReader(Protocol):
     async def get_stop_names(self, route_id: str) -> Sequence[str]: ...
+
+
+class NearbyStopReader(Protocol):
+    async def get_nearby_stops(self, box: BoundingBox) -> Sequence[Any]: ...
 
 
 class DirectionReader(Protocol):

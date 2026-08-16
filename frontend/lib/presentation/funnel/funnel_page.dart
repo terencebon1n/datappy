@@ -10,6 +10,7 @@ import 'package:frontend/domain/transit_path.dart';
 import 'package:frontend/presentation/funnel/funnel_colors.dart';
 import 'package:frontend/presentation/funnel/city_step.dart';
 import 'package:frontend/presentation/funnel/line_step.dart';
+import 'package:frontend/presentation/funnel/nearby_step.dart';
 import 'package:frontend/presentation/funnel/stop_step.dart';
 
 class FunnelPage extends StatelessWidget {
@@ -53,6 +54,7 @@ class FunnelPage extends StatelessWidget {
                   child: switch (step) {
                     FunnelStep.city => const CityStep(),
                     FunnelStep.line => const LineStep(),
+                    FunnelStep.nearby => const NearbyStep(),
                     FunnelStep.source => const StopStep(
                       key: ValueKey('source'),
                       isSource: true,

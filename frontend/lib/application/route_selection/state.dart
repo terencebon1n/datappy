@@ -4,7 +4,7 @@ import 'package:frontend/domain/direction.dart';
 
 enum RouteSelectionStatus { loading, ready }
 
-enum FunnelStep { city, line, source, dest }
+enum FunnelStep { city, line, nearby, source, dest }
 
 class RouteSelectionState {
   final RouteSelectionStatus status;

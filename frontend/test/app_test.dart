@@ -20,6 +20,8 @@ void main() {
       directionRepo: FakeDirectionRepo(),
       stopUpdateRepo: FakeStopUpdateRepo(),
       alertRepo: FakeAlertRepo(),
+      nearbyRepo: FakeNearbyStopRepo(),
+      location: FakeLocationProvider(),
       initialThemeMode: ThemeMode.light,
     ));
     await tester.pump();

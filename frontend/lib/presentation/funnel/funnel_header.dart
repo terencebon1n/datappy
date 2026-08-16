@@ -115,6 +115,7 @@ class _Stepper extends StatelessWidget {
   int get _index => switch (current) {
         FunnelStep.city => 0,
         FunnelStep.line => 0,
+        FunnelStep.nearby => 0,
         FunnelStep.source => 1,
         FunnelStep.dest => 2,
       };

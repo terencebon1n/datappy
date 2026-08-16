@@ -21,3 +21,15 @@ class RouteTypeName(StrEnum):
     CABLE_CAR = "Cable Car"
     GONDOLA = "Gondola"
     FUNICULAR = "Funicular"
+
+
+def route_type_name(route_type: int) -> str:
+    """Human-readable label for a GTFS route_type.
+
+    GTFS allows extended route types beyond the standard 0-7, so fall back
+    gracefully instead of raising on an unknown value.
+    """
+    try:
+        return RouteTypeName[RouteTypeId(route_type).name].value
+    except ValueError:
+        return "Autre"

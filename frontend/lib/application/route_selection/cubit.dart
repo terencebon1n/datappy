@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/domain/city.dart';
 import 'package:frontend/domain/conveyance.dart';
+import 'package:frontend/domain/nearby_stop.dart';
 import 'package:frontend/domain/repositories/i_city.dart';
 import 'package:frontend/domain/repositories/i_conveyance.dart';
 import 'package:frontend/domain/repositories/i_direction.dart';
@@ -105,6 +106,7 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
     final prev = switch (state.step) {
       FunnelStep.city => null,
       FunnelStep.line => FunnelStep.city,
+      FunnelStep.nearby => FunnelStep.line,
       FunnelStep.source => FunnelStep.line,
       FunnelStep.dest => FunnelStep.source,
     };
@@ -121,6 +123,23 @@ class RouteSelectionCubit extends Cubit<RouteSelectionState> {
 
   Future<void> selectConveyance(Conveyance conveyance) async {
     emit(_afterConveyance(conveyance));
+    final stops =
+        await _stopRepo.resolveStopNames(conveyance.id, state.selectedCity!);
+    emit(state.copyWith(stops: stops));
+  }
+
+  void browseNearby() => emit(state.copyWith(step: FunnelStep.nearby));
+
+  Future<void> selectNearbyStop(NearbyStop stop, Conveyance conveyance) async {
+    emit(RouteSelectionState(
+      status: state.status,
+      step: FunnelStep.dest,
+      cities: state.cities,
+      conveyances: state.conveyances,
+      selectedCity: state.selectedCity,
+      selectedConveyance: conveyance,
+      sourceStop: stop.name,
+    ));
     final stops =
         await _stopRepo.resolveStopNames(conveyance.id, state.selectedCity!);
     emit(state.copyWith(stops: stops));
