@@ -10,6 +10,7 @@ import 'package:frontend/domain/coordinates.dart';
 import 'package:frontend/domain/nearby_stop.dart';
 import 'package:frontend/domain/route_geometry.dart';
 import 'package:frontend/domain/vehicle_position.dart';
+import 'package:frontend/domain/stop_departure.dart';
 import 'package:frontend/domain/stop_update.dart';
 import 'package:frontend/domain/alert.dart';
 import 'package:frontend/domain/transit_path.dart';
@@ -22,6 +23,7 @@ import 'package:frontend/domain/repositories/i_location.dart';
 import 'package:frontend/domain/repositories/i_nearby_stop.dart';
 import 'package:frontend/domain/repositories/i_route_geometry.dart';
 import 'package:frontend/domain/repositories/i_vehicle_position.dart';
+import 'package:frontend/domain/repositories/i_stop_departure.dart';
 import 'package:frontend/domain/repositories/i_stop_update.dart';
 import 'package:frontend/domain/repositories/i_alert.dart';
 import 'package:frontend/domain/repositories/i_selection_store.dart';
@@ -276,18 +278,22 @@ VehiclePosition sampleVehiclePosition({
   double latitude = 43.6085,
   double longitude = 3.8794,
   int bearing = 90,
+  int directionId = 0,
+  int speed = 12,
+  String currentStatus = 'IN_TRANSIT_TO',
+  int timestamp = 1700000000,
 }) =>
     VehiclePosition(
       id: id,
       tripId: 'trip-1',
       routeId: 'T1',
-      directionId: 0,
+      directionId: directionId,
       latitude: latitude,
       longitude: longitude,
       bearing: bearing,
-      speed: 12,
-      currentStatus: 'IN_TRANSIT_TO',
-      timestamp: 1700000000,
+      speed: speed,
+      currentStatus: currentStatus,
+      timestamp: timestamp,
     );
 
 RouteGeometry sampleRouteGeometry({
@@ -345,5 +351,41 @@ class FakeRouteGeometryRepo implements IRouteGeometryRepository {
     if (gate != null) await gate;
     if (throwError) throw Exception('geometry boom');
     return geometry;
+  }
+}
+
+StopDeparture sampleStopDeparture({
+  String tripId = 'trip-1',
+  int directionId = 0,
+  String headsign = 'Mosson',
+  int? departureTime,
+  int departureDelay = 0,
+  bool isRealtime = true,
+}) =>
+    StopDeparture(
+      tripId: tripId,
+      directionId: directionId,
+      headsign: headsign,
+      departureTime:
+          departureTime ?? DateTime.now().millisecondsSinceEpoch ~/ 1000 + 120,
+      departureDelay: departureDelay,
+      isRealtime: isRealtime,
+    );
+
+class FakeStopDepartureRepo implements IStopDepartureRepository {
+  FakeStopDepartureRepo({this.departures = const [], this.throwError = false});
+  final List<StopDeparture> departures;
+  final bool throwError;
+  final List<String> calls = [];
+
+  @override
+  Future<List<StopDeparture>> resolveStopDepartures({
+    required String routeId,
+    required String stopId,
+    required City city,
+  }) async {
+    calls.add(stopId);
+    if (throwError) throw Exception('departures boom');
+    return departures;
   }
 }

@@ -10,6 +10,7 @@ from backend.application.services.api.route_geometry_loader import (
     RouteGeometryLoaderService,
 )
 from backend.application.services.api.route_loader import RouteLoaderService
+from backend.application.services.api.stop_departure_feed import StopDepartureFeed
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.trip_loader import TripLoaderService
 from backend.domain.admin.session import AdminSession
@@ -50,6 +51,7 @@ def test_loaders_are_wired():
     assert isinstance(
         deps.get_route_geometry_loader(session), RouteGeometryLoaderService
     )
+    assert isinstance(deps.get_stop_departure_feed(session), StopDepartureFeed)
 
 
 async def test_require_admin_session_missing_token_raises():

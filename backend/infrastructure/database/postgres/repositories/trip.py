@@ -1,4 +1,6 @@
-from sqlalchemy import and_, select
+from typing import Sequence
+
+from sqlalchemy import Row, and_, func, select
 from sqlalchemy.orm import aliased
 
 from backend.infrastructure.database.postgres.models.stop import StopModel
@@ -9,6 +11,50 @@ from backend.infrastructure.database.repository import AsyncQueryRepository
 
 class TripRepository(AsyncQueryRepository[TripModel]):
     model = TripModel
+
+    async def get_trip_headsigns(self, trip_ids: list[str]) -> Sequence[Row]:
+        query = select(
+            self.model.id,
+            self.model.direction_id,
+            self.model.headsign,
+        ).where(self.model.id.in_(trip_ids))
+
+        result = await self.execute_select(query)
+
+        return result.all()
+
+    async def get_direction_headsigns(self, route_id: str) -> Sequence[Row]:
+        counts = (
+            select(
+                self.model.direction_id.label("direction_id"),
+                self.model.headsign.label("headsign"),
+                func.count().label("trip_count"),
+            )
+            .where(self.model.route_id == route_id)
+            .group_by(self.model.direction_id, self.model.headsign)
+            .subquery()
+        )
+
+        ranked = select(
+            counts.c.direction_id,
+            counts.c.headsign,
+            func.row_number()
+            .over(
+                partition_by=counts.c.direction_id,
+                order_by=counts.c.trip_count.desc(),
+            )
+            .label("rank"),
+        ).subquery()
+
+        query = (
+            select(ranked.c.direction_id, ranked.c.headsign)
+            .where(ranked.c.rank == 1)
+            .order_by(ranked.c.direction_id)
+        )
+
+        result = await self.execute_select(query)
+
+        return result.all()
 
     async def get_direction(
         self,

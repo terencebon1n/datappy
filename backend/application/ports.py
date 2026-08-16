@@ -89,6 +89,24 @@ class RouteStopReader(Protocol):
     async def get_route_stops(self, route_id: str) -> Sequence[Any]: ...
 
 
+class StopDepartureReader(Protocol):
+    async def get_stop_departures(
+        self,
+        route_id: str,
+        stop_id: str,
+        after_clock: str,
+        service_date: str,
+        weekday: str,
+        limit: int,
+    ) -> Sequence[Any]: ...
+
+
+class TripHeadsignReader(Protocol):
+    async def get_trip_headsigns(self, trip_ids: list[str]) -> Sequence[Any]: ...
+
+    async def get_direction_headsigns(self, route_id: str) -> Sequence[Any]: ...
+
+
 class MessageProducer(Protocol):
     async def send(self, topic: str, key: str, value: bytes) -> None: ...
 

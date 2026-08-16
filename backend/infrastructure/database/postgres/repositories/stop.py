@@ -37,6 +37,9 @@ class StopRepository(AsyncQueryRepository[StopModel]):
                 self.model.name,
                 self.model.latitude,
                 self.model.longitude,
+                self.model.code,
+                self.model.platform_code,
+                self.model.wheelchair_boarding,
             )
             .join(StopTimeModel, StopTimeModel.stop_id == self.model.id)
             .join(TripModel, StopTimeModel.trip_id == TripModel.id)

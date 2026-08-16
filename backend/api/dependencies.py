@@ -14,6 +14,7 @@ from backend.application.services.api.route_geometry_loader import (
     RouteGeometryLoaderService,
 )
 from backend.application.services.api.route_loader import RouteLoaderService
+from backend.application.services.api.stop_departure_feed import StopDepartureFeed
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.trip_loader import TripLoaderService
 from backend.domain.admin.session import AdminSession
@@ -25,8 +26,14 @@ from backend.infrastructure.database.postgres.manager import PostgresDatabaseMan
 from backend.infrastructure.database.postgres.repositories.route import RouteRepository
 from backend.infrastructure.database.postgres.repositories.shape import ShapeRepository
 from backend.infrastructure.database.postgres.repositories.stop import StopRepository
+from backend.infrastructure.database.postgres.repositories.stop_time import (
+    StopTimeRepository,
+)
 from backend.infrastructure.database.postgres.repositories.trip import TripRepository
 from backend.infrastructure.database.redis.repositories.alert import AlertRepository
+from backend.infrastructure.database.redis.repositories.stop_update import (
+    StopUpdateRepository,
+)
 from backend.infrastructure.docker.adapter import DockerProcessAdapter
 
 db_manager = PostgresDatabaseManager(is_async=False)
@@ -86,7 +93,17 @@ def get_nearby_stop_loader(session: GtfsSession) -> NearbyStopLoaderService:
 
 
 def get_route_geometry_loader(session: GtfsSession) -> RouteGeometryLoaderService:
-    return RouteGeometryLoaderService(ShapeRepository(session), StopRepository(session))
+    return RouteGeometryLoaderService(
+        ShapeRepository(session), StopRepository(session), TripRepository(session)
+    )
+
+
+def get_stop_departure_feed(session: GtfsSession) -> StopDepartureFeed:
+    return StopDepartureFeed(
+        StopUpdateRepository(redis_db),
+        StopTimeRepository(session),
+        TripRepository(session),
+    )
 
 
 def get_trip_loader(session: GtfsSession) -> TripLoaderService:

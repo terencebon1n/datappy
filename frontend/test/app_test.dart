@@ -24,6 +24,7 @@ void main() {
       location: FakeLocationProvider(),
       vehicleRepo: FakeVehiclePositionRepo(),
       geometryRepo: FakeRouteGeometryRepo(),
+      stopDepartureRepo: FakeStopDepartureRepo(),
       initialThemeMode: ThemeMode.light,
     ));
     await tester.pump();

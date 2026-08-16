@@ -12,6 +12,7 @@ const _noExecutableLines = <String>{
   'lib/domain/repositories/i_route_geometry.dart',
   'lib/domain/repositories/i_vehicle_position.dart',
   'lib/domain/repositories/i_selection_store.dart',
+  'lib/domain/repositories/i_stop_departure.dart',
   'lib/domain/repositories/i_stop_name.dart',
   'lib/domain/repositories/i_stop_update.dart',
   'lib/domain/repositories/i_theme_store.dart',

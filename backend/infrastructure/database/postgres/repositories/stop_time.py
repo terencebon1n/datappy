@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlalchemy import and_, except_, select, union
+from sqlalchemy import CompoundSelect, Row, and_, except_, select, union
 from sqlalchemy.orm import aliased
 
 from backend.domain.gtfs.scheduled_departure import ScheduledDeparture
@@ -30,18 +30,9 @@ class StopTimeRepository(AsyncQueryRepository[StopTimeModel]):
 
         return result.scalars().all()
 
-    async def get_scheduled_departures(
-        self,
-        route_id: str,
-        direction_id: int,
-        origin_stop_id: str,
-        destination_stop_id: str,
-        after_clock: str,
-        service_date: str,
-        weekday: str,
-        limit: int,
-    ) -> Sequence[ScheduledDeparture]:
-        active_services = except_(
+    @staticmethod
+    def _active_services(service_date: str, weekday: str) -> CompoundSelect:
+        return except_(
             union(
                 select(CalendarModel.service_id).where(
                     and_(
@@ -64,6 +55,54 @@ class StopTimeRepository(AsyncQueryRepository[StopTimeModel]):
                 )
             ),
         )
+
+    async def get_stop_departures(
+        self,
+        route_id: str,
+        stop_id: str,
+        after_clock: str,
+        service_date: str,
+        weekday: str,
+        limit: int,
+    ) -> Sequence[Row]:
+        query = (
+            select(
+                self.model.trip_id,
+                self.model.departure_time,
+                TripModel.direction_id,
+                TripModel.headsign,
+            )
+            .join(TripModel, TripModel.id == self.model.trip_id)
+            .where(
+                and_(
+                    self.model.stop_id == stop_id,
+                    self.model.departure_time >= after_clock,
+                    TripModel.route_id == route_id,
+                    TripModel.service_id.in_(
+                        self._active_services(service_date, weekday)
+                    ),
+                )
+            )
+            .order_by(self.model.departure_time)
+            .limit(limit)
+        )
+
+        result = await self.execute_select(query)
+
+        return result.all()
+
+    async def get_scheduled_departures(
+        self,
+        route_id: str,
+        direction_id: int,
+        origin_stop_id: str,
+        destination_stop_id: str,
+        after_clock: str,
+        service_date: str,
+        weekday: str,
+        limit: int,
+    ) -> Sequence[ScheduledDeparture]:
+        active_services = self._active_services(service_date, weekday)
 
         destination = aliased(StopTimeModel, name="st_destination")
 

@@ -157,3 +157,76 @@ async def test_stop_get_route_stops():
     compiled = str(session.execute.await_args.args[0])
     assert "DISTINCT" in compiled
     assert "trip.route_id" in compiled
+
+
+async def test_stop_time_get_stop_departures():
+    result = MagicMock()
+    result.all.return_value = [
+        SimpleNamespace(
+            trip_id="t1",
+            departure_time="08:00:00",
+            direction_id=0,
+            headsign="Mosson",
+        )
+    ]
+    session = _session_returning(result)
+    repo = StopTimeRepository(session)
+
+    rows = await repo.get_stop_departures(
+        route_id="r1",
+        stop_id="s1",
+        after_clock="07:00:00",
+        service_date="20260706",
+        weekday="monday",
+        limit=6,
+    )
+
+    assert rows[0].headsign == "Mosson"
+    compiled = str(session.execute.await_args.args[0])
+    assert "trip.headsign" in compiled
+    assert "trip.direction_id" in compiled
+    assert "EXCEPT" in compiled
+
+
+async def test_trip_get_trip_headsigns():
+    result = MagicMock()
+    result.all.return_value = [
+        SimpleNamespace(id="t1", direction_id=0, headsign="Mosson")
+    ]
+    session = _session_returning(result)
+    repo = TripRepository(session)
+
+    rows = await repo.get_trip_headsigns(["t1", "t2"])
+
+    assert rows[0].headsign == "Mosson"
+    assert "IN " in str(session.execute.await_args.args[0])
+
+
+async def test_trip_get_direction_headsigns_keeps_the_most_common():
+    result = MagicMock()
+    result.all.return_value = [
+        SimpleNamespace(direction_id=0, headsign="Mosson"),
+        SimpleNamespace(direction_id=1, headsign="Odysseum"),
+    ]
+    session = _session_returning(result)
+    repo = TripRepository(session)
+
+    rows = await repo.get_direction_headsigns("r1")
+
+    assert [row.headsign for row in rows] == ["Mosson", "Odysseum"]
+    compiled = str(session.execute.await_args.args[0])
+    assert "row_number() OVER" in compiled
+    assert "count(*)" in compiled
+
+
+async def test_stop_get_route_stops_selects_metadata():
+    result = MagicMock()
+    result.all.return_value = []
+    session = _session_returning(result)
+
+    await StopRepository(session).get_route_stops("r1")
+
+    compiled = str(session.execute.await_args.args[0])
+    assert "stop.code" in compiled
+    assert "stop.platform_code" in compiled
+    assert "stop.wheelchair_boarding" in compiled

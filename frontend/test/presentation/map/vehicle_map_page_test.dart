@@ -7,10 +7,13 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:frontend/application/route_selection/cubit.dart';
 import 'package:frontend/application/theme/cubit.dart';
+import 'package:frontend/application/stop_departures/cubit.dart';
 import 'package:frontend/application/vehicle_map/cubit.dart';
 import 'package:frontend/domain/coordinates.dart';
 import 'package:frontend/domain/route_geometry.dart';
 import 'package:frontend/domain/transit_path.dart';
+import 'package:frontend/presentation/map/stop_details_sheet.dart';
+import 'package:frontend/presentation/map/vehicle_details_sheet.dart';
 import 'package:frontend/presentation/map/vehicle_map_page.dart';
 import 'package:frontend/presentation/theme/colors.dart';
 
@@ -282,5 +285,94 @@ void main() {
     await _pump(tester);
 
     expect(find.text('0 véhicules'), findsNothing);
+  });
+
+  testWidgets('tapping a stop opens its details sheet with departures',
+      (tester) async {
+    final route = await _withLine(tester);
+    final vehicleMap = VehicleMapCubit(
+      vehicleRepo: FakeVehiclePositionRepo(),
+      geometryRepo: FakeRouteGeometryRepo(),
+    );
+    await tester.runAsync(() => vehicleMap.watch(_path()));
+    final repo = FakeStopDepartureRepo(
+      departures: [sampleStopDeparture(headsign: 'Mosson')],
+    );
+    final departures = StopDeparturesCubit(repo: repo);
+
+    final cubits = TestCubits(
+      routeSelection: route,
+      vehicleMap: vehicleMap,
+      stopDepartures: departures,
+    );
+    addTearDown(cubits.close);
+    await pumpApp(tester, Scaffold(body: VehicleMapPage()), cubits: cubits);
+    await tester.pump();
+
+    await tester.tap(find.byType(GestureDetector).first, warnIfMissed: false);
+    await tester.pump();
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pump();
+
+    expect(repo.calls, ['s1']);
+    expect(find.byType(StopDetailsSheet), findsOneWidget);
+  });
+
+  testWidgets('tapping a vehicle opens its details sheet with the headsign',
+      (tester) async {
+    final route = await _withLine(tester);
+    final vehicles = FakeVehiclePositionRepo();
+    final vehicleMap = VehicleMapCubit(
+      vehicleRepo: vehicles,
+      geometryRepo: FakeRouteGeometryRepo(
+        geometry: RouteGeometry(
+          shapes: const [],
+          stops: const [],
+          directionHeadsigns: const {0: 'Mosson'},
+        ),
+      ),
+    );
+    await tester.runAsync(() => vehicleMap.watch(_path()));
+    vehicles.controller.add([sampleVehiclePosition(id: 'v1')]);
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+
+    final cubits = TestCubits(routeSelection: route, vehicleMap: vehicleMap);
+    addTearDown(cubits.close);
+    await pumpApp(tester, Scaffold(body: VehicleMapPage()), cubits: cubits);
+    await tester.pump();
+
+    await tester.tap(find.byType(GestureDetector).first, warnIfMissed: false);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(VehicleDetailsSheet), findsOneWidget);
+    expect(find.text('Mosson'), findsOneWidget);
+  });
+
+  testWidgets('a stop tap without a selection still opens the sheet',
+      (tester) async {
+    final vehicleMap = VehicleMapCubit(
+      vehicleRepo: FakeVehiclePositionRepo(),
+      geometryRepo: FakeRouteGeometryRepo(),
+    );
+    await tester.runAsync(() => vehicleMap.watch(_path()));
+    final repo = FakeStopDepartureRepo();
+    final departures = StopDeparturesCubit(repo: repo);
+
+    final cubits = TestCubits(vehicleMap: vehicleMap, stopDepartures: departures);
+    addTearDown(cubits.close);
+    await pumpApp(tester, Scaffold(body: VehicleMapPage()), cubits: cubits);
+    await tester.pump();
+
+    unawaited(openStopDetails(
+      tester.element(find.byType(VehicleMapPage)),
+      const RouteStop(id: 's1', name: 'Comédie', latitude: 43.6, longitude: 3.87),
+      const Color(0xFF0080C0),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(repo.calls, isEmpty);
+    expect(find.byType(StopDetailsSheet), findsOneWidget);
   });
 }

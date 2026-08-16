@@ -15,12 +15,14 @@ from backend.api.dependencies import (
     get_nearby_stop_loader,
     get_route_geometry_loader,
     get_route_loader,
+    get_stop_departure_feed,
     get_stop_loader,
     get_trip_loader,
     gtfs_engine_for,
     redis_db,
 )
 from backend.application.dto.alert import AlertDTO, AlertPathDTO
+from backend.application.dto.departure import StopDepartureDTO, StopDeparturePathDTO
 from backend.application.dto.geometry import RouteGeometryDTO
 from backend.application.dto.route import ConveyanceDTO, RouteIdDTO
 from backend.application.dto.stop import (
@@ -37,6 +39,7 @@ from backend.application.services.api.route_geometry_loader import (
     RouteGeometryLoaderService,
 )
 from backend.application.services.api.route_loader import RouteLoaderService
+from backend.application.services.api.stop_departure_feed import StopDepartureFeed
 from backend.application.services.api.stop_loader import StopLoaderService
 from backend.application.services.api.stop_update_feed import StopUpdateFeed
 from backend.application.services.api.trip_loader import TripLoaderService
@@ -100,6 +103,14 @@ async def get_route_geometry(
     ],
 ) -> RouteGeometryDTO:
     return await geometry_loader.get_route_geometry(selection.route_id)
+
+
+@gtfs_router.get("/stop-departures", response_model=list[StopDepartureDTO])
+async def get_stop_departures(
+    selection: Annotated[StopDeparturePathDTO, Query()],
+    departure_feed: Annotated[StopDepartureFeed, Depends(get_stop_departure_feed)],
+) -> list[StopDepartureDTO]:
+    return await departure_feed.get_departures(selection)
 
 
 @gtfs_router.get("/direction", response_model=DirectionDTO)

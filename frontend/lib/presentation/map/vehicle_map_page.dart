@@ -6,12 +6,15 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:frontend/application/route_selection/cubit.dart';
+import 'package:frontend/application/stop_departures/cubit.dart';
 import 'package:frontend/application/theme/cubit.dart';
 import 'package:frontend/application/vehicle_map/cubit.dart';
 import 'package:frontend/application/vehicle_map/state.dart';
 import 'package:frontend/domain/conveyance.dart';
 import 'package:frontend/domain/route_geometry.dart';
 import 'package:frontend/domain/vehicle_position.dart';
+import 'package:frontend/presentation/map/stop_details_sheet.dart';
+import 'package:frontend/presentation/map/vehicle_details_sheet.dart';
 import 'package:frontend/presentation/theme/colors.dart';
 
 const _fallbackCenter = LatLng(43.6108, 3.8767);
@@ -230,9 +233,19 @@ class _MapBody extends StatelessWidget {
             for (final stop in state.geometry?.stops ?? const <RouteStop>[])
               Marker(
                 point: LatLng(stop.latitude, stop.longitude),
-                width: 9,
-                height: 9,
-                child: _StopDot(routeColor: routeColor),
+                width: 26,
+                height: 26,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => openStopDetails(context, stop, routeColor),
+                  child: Center(
+                    child: SizedBox(
+                      width: 9,
+                      height: 9,
+                      child: _StopDot(routeColor: routeColor),
+                    ),
+                  ),
+                ),
               ),
           ],
         ),
@@ -241,9 +254,24 @@ class _MapBody extends StatelessWidget {
             for (final vehicle in state.vehicles)
               Marker(
                 point: LatLng(vehicle.latitude, vehicle.longitude),
-                width: 28,
-                height: 28,
-                child: _VehicleMarker(vehicle: vehicle, color: routeColor),
+                width: 34,
+                height: 34,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => openVehicleDetails(
+                    context,
+                    vehicle,
+                    routeColor,
+                    state.geometry?.headsignFor(vehicle.directionId),
+                  ),
+                  child: Center(
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: _VehicleMarker(vehicle: vehicle, color: routeColor),
+                    ),
+                  ),
+                ),
               ),
           ],
         ),
@@ -251,6 +279,54 @@ class _MapBody extends StatelessWidget {
       ],
     );
   }
+}
+
+Future<void> openStopDetails(
+  BuildContext context,
+  RouteStop stop,
+  Color routeColor,
+) {
+  final selection = context.read<RouteSelectionCubit>().state;
+  final departures = context.read<StopDeparturesCubit>();
+
+  if (selection.selectedConveyance != null && selection.selectedCity != null) {
+    departures.load(
+      routeId: selection.selectedConveyance!.id,
+      stopId: stop.id,
+      city: selection.selectedCity!,
+    );
+  }
+
+  return showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => BlocProvider.value(
+      value: departures,
+      child: StopDetailsSheet(
+        stop: stop,
+        routeColor: routeColor,
+        now: DateTime.now(),
+      ),
+    ),
+  );
+}
+
+Future<void> openVehicleDetails(
+  BuildContext context,
+  VehiclePosition vehicle,
+  Color routeColor,
+  String? headsign,
+) {
+  return showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => VehicleDetailsSheet(
+      vehicle: vehicle,
+      routeColor: routeColor,
+      headsign: headsign,
+      now: DateTime.now(),
+    ),
+  );
 }
 
 class _StopDot extends StatelessWidget {

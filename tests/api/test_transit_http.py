@@ -7,10 +7,13 @@ from backend.api.dependencies import (
     get_nearby_stop_loader,
     get_route_geometry_loader,
     get_route_loader,
+    get_stop_departure_feed,
     get_stop_loader,
     get_trip_loader,
 )
+from backend.application.dto.departure import StopDepartureDTO
 from backend.application.dto.geometry import (
+    DirectionHeadsignDTO,
     PointDTO,
     RouteGeometryDTO,
     RouteShapeDTO,
@@ -236,8 +239,17 @@ def test_get_route_geometry(app, client):
             ],
             stops=[
                 RouteStopDTO(
-                    id="s1", name="Comédie", latitude=43.6085, longitude=3.8794
+                    id="s1",
+                    name="Comédie",
+                    latitude=43.6085,
+                    longitude=3.8794,
+                    code="1234",
+                    platform_code="B",
+                    wheelchair_boarding=1,
                 )
+            ],
+            direction_headsigns=[
+                DirectionHeadsignDTO(direction_id=0, headsign="Mosson")
             ],
         )
     )
@@ -252,6 +264,9 @@ def test_get_route_geometry(app, client):
     assert body["shapes"][0]["direction_id"] == 0
     assert len(body["shapes"][0]["points"]) == 2
     assert body["stops"][0]["name"] == "Comédie"
+    assert body["stops"][0]["platform_code"] == "B"
+    assert body["stops"][0]["wheelchair_boarding"] == 1
+    assert body["direction_headsigns"][0]["headsign"] == "Mosson"
     loader.get_route_geometry.assert_awaited_once_with("r1")
 
 
@@ -269,3 +284,68 @@ def test_get_route_geometry_requires_route_id(app, client):
 
     assert response.status_code == 422
     loader.get_route_geometry.assert_not_awaited()
+
+
+def test_get_stop_departures(app, client):
+    feed = MagicMock()
+    feed.get_departures = AsyncMock(
+        return_value=[
+            StopDepartureDTO(
+                trip_id="t1",
+                direction_id=0,
+                headsign="Mosson",
+                departure_time=1700000000,
+                departure_delay=30,
+                is_realtime=True,
+            )
+        ]
+    )
+    app.dependency_overrides[get_stop_departure_feed] = lambda: feed
+
+    response = client.get(
+        "/stop-departures",
+        params={"city": "montpellier", "route_id": "r1", "stop_id": "s1", "limit": 4},
+        headers=_CITY_HEADER,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body[0]["headsign"] == "Mosson"
+    assert body[0]["is_realtime"] is True
+    assert feed.get_departures.await_args.args[0].limit == 4
+
+
+def test_get_stop_departures_defaults_the_limit(app, client):
+    feed = MagicMock()
+    feed.get_departures = AsyncMock(return_value=[])
+    app.dependency_overrides[get_stop_departure_feed] = lambda: feed
+
+    response = client.get(
+        "/stop-departures",
+        params={"city": "montpellier", "route_id": "r1", "stop_id": "s1"},
+        headers=_CITY_HEADER,
+    )
+
+    assert response.status_code == 200
+    assert feed.get_departures.await_args.args[0].limit == 6
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"city": "montpellier", "route_id": "r1"},
+        {"city": "montpellier", "stop_id": "s1"},
+        {"city": "nowhere", "route_id": "r1", "stop_id": "s1"},
+        {"city": "montpellier", "route_id": "r1", "stop_id": "s1", "limit": 0},
+        {"city": "montpellier", "route_id": "r1", "stop_id": "s1", "limit": 99},
+    ],
+)
+def test_get_stop_departures_rejects_invalid_query(app, client, params):
+    feed = MagicMock()
+    feed.get_departures = AsyncMock(return_value=[])
+    app.dependency_overrides[get_stop_departure_feed] = lambda: feed
+
+    response = client.get("/stop-departures", params=params, headers=_CITY_HEADER)
+
+    assert response.status_code == 422
+    feed.get_departures.assert_not_awaited()
