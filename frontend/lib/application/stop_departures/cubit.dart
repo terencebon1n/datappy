@@ -13,16 +13,11 @@ class StopDeparturesCubit extends Cubit<StopDeparturesState> {
         : _repo = repo,
           super(const StopDeparturesState());
 
-    Future<void> load({
-        required String routeId,
-        required String stopId,
-        required City city,
-    }) async {
+    Future<void> load({required String stopId, required City city}) async {
         emit(const StopDeparturesState(status: StopDeparturesStatus.loading));
 
         try {
             final departures = await _repo.resolveStopDepartures(
-                routeId: routeId,
                 stopId: stopId,
                 city: city,
             );

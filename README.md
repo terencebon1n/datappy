@@ -12,7 +12,7 @@
 
 * 🔴 Départs temps réel poussés en direct (WebSocket) et repli sur l'horaire planifié.
 * ⚠️ Alertes trafic (GTFS-RT `Alert`) affichées sous la liste des départs, filtrées sur la ligne, la direction et l'arrêt sélectionnés.
-* 🗺️ **Carte temps réel** : onglet dédié affichant les véhicules GTFS-RT de la ligne sélectionnée sur un fond cartographique thématisé (clair/sombre), avec le tracé de la ligne et ses arrêts. Toucher un arrêt ouvre ses prochains départs, toucher un véhicule affiche sa destination, sa vitesse et sa fraîcheur.
+* 🗺️ **Carte temps réel** : onglet dédié affichant les véhicules GTFS-RT de la ligne sélectionnée sur un fond cartographique thématisé (clair/sombre), avec le tracé de la ligne et ses arrêts. Toucher un arrêt ouvre toutes les destinations desservies depuis cet arrêt (une colonne par destination, lignes badgées), toucher un véhicule affiche sa destination, sa vitesse et sa fraîcheur.
 * 📍 **Autour de moi** : géolocalisation de l'utilisateur pour lister les arrêts les plus proches (regroupés par nom, avec les lignes qui les desservent) et sauter directement au choix de la destination.
 * ⭐ Favoris avec réordonnancement par glisser-déposer, persistance de la dernière recherche.
 * 🌙 Mode sombre.
@@ -83,7 +83,7 @@ L'API est servie sur le port `8000`. Les endpoints de transit attendent l'en-tê
 | `WS` | `/stop-updates?…` | Flux temps réel des prochains départs d'un arrêt. |
 | `WS` | `/vehicle-positions?city=…&route_id=…` | Flux temps réel des positions des véhicules d'une ligne. |
 | `GET` | `/route-geometry?route_id=…` | Tracé (une polyligne par direction), arrêts et girouettes par direction d'une ligne, pour la carte. |
-| `GET` | `/stop-departures?city=…&route_id=…&stop_id=…&limit=…` | Prochains départs à un arrêt, toutes directions confondues (temps réel puis repli sur l'horaire). |
+| `GET` | `/stop-departures?city=…&stop_id=…&limit=…` | Prochains départs à un arrêt : tous les quais de la ville portant ce nom, toutes lignes et directions confondues (temps réel puis repli sur l'horaire). `limit` s'applique par destination. |
 | `GET` | `/alerts?city=…&route_id=…&direction_id=…&stop_id=…` | Alertes trafic GTFS-RT liées à la ligne / direction / arrêt sélectionné. |
 | `GET` | `/admin/login`, `/admin/callback`, `/admin/logout` | Authentification Google OAuth de l'admin. |
 | `WS` | `/admin/status` | Statut en direct des producteurs/consommateurs. |

@@ -289,12 +289,8 @@ Future<void> openStopDetails(
   final selection = context.read<RouteSelectionCubit>().state;
   final departures = context.read<StopDeparturesCubit>();
 
-  if (selection.selectedConveyance != null && selection.selectedCity != null) {
-    departures.load(
-      routeId: selection.selectedConveyance!.id,
-      stopId: stop.id,
-      city: selection.selectedCity!,
-    );
+  if (selection.selectedCity != null) {
+    departures.load(stopId: stop.id, city: selection.selectedCity!);
   }
 
   return showModalBottomSheet<void>(

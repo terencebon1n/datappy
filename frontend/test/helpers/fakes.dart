@@ -356,6 +356,10 @@ class FakeRouteGeometryRepo implements IRouteGeometryRepository {
 
 StopDeparture sampleStopDeparture({
   String tripId = 'trip-1',
+  String routeId = 'T1',
+  String routeShortName = '1',
+  int? routeColorValue = 0xFF0080C0,
+  int routeTypeId = 0,
   int directionId = 0,
   String headsign = 'Mosson',
   int? departureTime,
@@ -364,6 +368,10 @@ StopDeparture sampleStopDeparture({
 }) =>
     StopDeparture(
       tripId: tripId,
+      routeId: routeId,
+      routeShortName: routeShortName,
+      routeColorValue: routeColorValue,
+      routeTypeId: routeTypeId,
       directionId: directionId,
       headsign: headsign,
       departureTime:
@@ -380,7 +388,6 @@ class FakeStopDepartureRepo implements IStopDepartureRepository {
 
   @override
   Future<List<StopDeparture>> resolveStopDepartures({
-    required String routeId,
     required String stopId,
     required City city,
   }) async {

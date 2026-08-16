@@ -292,6 +292,10 @@ def test_get_stop_departures(app, client):
         return_value=[
             StopDepartureDTO(
                 trip_id="t1",
+                route_id="r1",
+                route_short_name="1",
+                route_color="005CA9",
+                route_type=0,
                 direction_id=0,
                 headsign="Mosson",
                 departure_time=1700000000,
@@ -304,13 +308,14 @@ def test_get_stop_departures(app, client):
 
     response = client.get(
         "/stop-departures",
-        params={"city": "montpellier", "route_id": "r1", "stop_id": "s1", "limit": 4},
+        params={"city": "montpellier", "stop_id": "s1", "limit": 4},
         headers=_CITY_HEADER,
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body[0]["headsign"] == "Mosson"
+    assert body[0]["route_short_name"] == "1"
     assert body[0]["is_realtime"] is True
     assert feed.get_departures.await_args.args[0].limit == 4
 
@@ -322,22 +327,22 @@ def test_get_stop_departures_defaults_the_limit(app, client):
 
     response = client.get(
         "/stop-departures",
-        params={"city": "montpellier", "route_id": "r1", "stop_id": "s1"},
+        params={"city": "montpellier", "stop_id": "s1"},
         headers=_CITY_HEADER,
     )
 
     assert response.status_code == 200
-    assert feed.get_departures.await_args.args[0].limit == 6
+    assert feed.get_departures.await_args.args[0].limit == 4
 
 
 @pytest.mark.parametrize(
     "params",
     [
-        {"city": "montpellier", "route_id": "r1"},
-        {"city": "montpellier", "stop_id": "s1"},
-        {"city": "nowhere", "route_id": "r1", "stop_id": "s1"},
-        {"city": "montpellier", "route_id": "r1", "stop_id": "s1", "limit": 0},
-        {"city": "montpellier", "route_id": "r1", "stop_id": "s1", "limit": 99},
+        {"city": "montpellier"},
+        {"stop_id": "s1"},
+        {"city": "nowhere", "stop_id": "s1"},
+        {"city": "montpellier", "stop_id": "s1", "limit": 0},
+        {"city": "montpellier", "stop_id": "s1", "limit": 99},
     ],
 )
 def test_get_stop_departures_rejects_invalid_query(app, client, params):

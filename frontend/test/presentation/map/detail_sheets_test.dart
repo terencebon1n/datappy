@@ -41,7 +41,7 @@ Future<StopDeparturesCubit> _pumpStopSheet(
 
   if (load) {
     await tester.runAsync(
-      () => cubit.load(routeId: 'T1', stopId: 's1', city: sampleCity()),
+      () => cubit.load(stopId: 's1', city: sampleCity()),
     );
   }
 
@@ -298,6 +298,213 @@ void main() {
       await _pumpVehicleSheet(tester, status: 'IN_TRANSIT_TO');
 
       expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+    });
+  });
+
+  group('groupByDestination', () {
+    test('keys columns by headsign', () {
+      final grouped = groupByDestination([
+        sampleStopDeparture(tripId: 'a', headsign: 'Mosson'),
+        sampleStopDeparture(tripId: 'b', headsign: 'Odysseum'),
+        sampleStopDeparture(tripId: 'c', headsign: 'Mosson'),
+      ]);
+
+      expect(grouped.keys, ['Mosson', 'Odysseum']);
+      expect(grouped['Mosson'], hasLength(2));
+      expect(grouped['Odysseum'], hasLength(1));
+    });
+
+    test('sorts each column by departure time', () {
+      final grouped = groupByDestination([
+        sampleStopDeparture(tripId: 'late', departureTime: _nowEpoch + 600),
+        sampleStopDeparture(tripId: 'soon', departureTime: _nowEpoch + 60),
+      ]);
+
+      expect(
+        grouped['Mosson']!.map((d) => d.tripId),
+        ['soon', 'late'],
+      );
+    });
+
+    test('labels a missing headsign', () {
+      final grouped = groupByDestination([sampleStopDeparture(headsign: '')]);
+
+      expect(grouped.keys, ['Direction inconnue']);
+    });
+
+    test('yields nothing for no departures', () {
+      expect(groupByDestination([]), isEmpty);
+    });
+  });
+
+  group('StopDetailsSheet columns', () {
+    testWidgets('shows one column per destination with times stacked',
+        (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(departures: [
+          sampleStopDeparture(
+            tripId: 'a',
+            headsign: 'Mosson',
+            departureTime: _nowEpoch + 120,
+          ),
+          sampleStopDeparture(
+            tripId: 'b',
+            headsign: 'Mosson',
+            departureTime: _nowEpoch + 540,
+          ),
+          sampleStopDeparture(
+            tripId: 'c',
+            directionId: 1,
+            headsign: 'Odysseum',
+            departureTime: _nowEpoch + 240,
+          ),
+          sampleStopDeparture(
+            tripId: 'd',
+            directionId: 1,
+            headsign: 'Odysseum',
+            departureTime: _nowEpoch + 720,
+          ),
+        ]),
+      );
+
+      expect(find.text('Mosson'), findsOneWidget);
+      expect(find.text('Odysseum'), findsOneWidget);
+      expect(find.text('2 min'), findsOneWidget);
+      expect(find.text('9 min'), findsOneWidget);
+      expect(find.text('4 min'), findsOneWidget);
+      expect(find.text('12 min'), findsOneWidget);
+    });
+
+    testWidgets('separates the columns with a divider', (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(departures: [
+          sampleStopDeparture(headsign: 'Mosson'),
+          sampleStopDeparture(
+            tripId: 'b',
+            directionId: 1,
+            headsign: 'Odysseum',
+          ),
+        ]),
+      );
+
+      expect(find.byType(VerticalDivider), findsOneWidget);
+    });
+
+    testWidgets('a single destination needs no divider', (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(
+          departures: [sampleStopDeparture(headsign: 'Mosson')],
+        ),
+      );
+
+      expect(find.text('Mosson'), findsOneWidget);
+      expect(find.byType(VerticalDivider), findsNothing);
+    });
+
+    testWidgets('renders three destinations when the route branches',
+        (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(departures: [
+          sampleStopDeparture(tripId: 'a', headsign: 'Mosson'),
+          sampleStopDeparture(tripId: 'b', headsign: 'Odysseum'),
+          sampleStopDeparture(tripId: 'c', headsign: 'Jacou'),
+        ]),
+      );
+
+      expect(find.byType(VerticalDivider), findsNWidgets(2));
+      expect(find.text('Jacou'), findsOneWidget);
+    });
+  });
+
+  group('StopDetailsSheet across lines', () {
+    testWidgets('badges each departure with its line', (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(departures: [
+          sampleStopDeparture(
+            tripId: 'a',
+            routeId: 'T1',
+            routeShortName: '1',
+            headsign: 'Mosson',
+            departureTime: _nowEpoch + 120,
+          ),
+          sampleStopDeparture(
+            tripId: 'b',
+            routeId: 'B9',
+            routeShortName: '9',
+            headsign: 'Jacou',
+            departureTime: _nowEpoch + 300,
+          ),
+        ]),
+      );
+
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('9'), findsOneWidget);
+      expect(find.text('Mosson'), findsOneWidget);
+      expect(find.text('Jacou'), findsOneWidget);
+    });
+
+    testWidgets('two lines sharing a destination share one column',
+        (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(departures: [
+          sampleStopDeparture(
+            tripId: 'a',
+            routeId: 'T1',
+            routeShortName: '1',
+            headsign: 'Gare',
+            departureTime: _nowEpoch + 120,
+          ),
+          sampleStopDeparture(
+            tripId: 'b',
+            routeId: 'T4',
+            routeShortName: '4',
+            headsign: 'Gare',
+            departureTime: _nowEpoch + 300,
+          ),
+        ]),
+      );
+
+      expect(find.text('Gare'), findsOneWidget);
+      expect(find.byType(VerticalDivider), findsNothing);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
+    });
+
+    testWidgets('a line with no colour still badges', (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(departures: [
+          sampleStopDeparture(routeShortName: '7', routeColorValue: null),
+        ]),
+      );
+
+      expect(find.text('7'), findsOneWidget);
+    });
+
+    testWidgets('a line with no short name badges a placeholder',
+        (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(
+          departures: [sampleStopDeparture(routeShortName: '')],
+        ),
+      );
+
+      expect(find.text('?'), findsOneWidget);
     });
   });
 }

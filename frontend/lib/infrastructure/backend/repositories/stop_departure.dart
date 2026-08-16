@@ -20,14 +20,12 @@ class StopDepartureRepository implements IStopDepartureRepository {
 
     @override
     Future<List<StopDeparture>> resolveStopDepartures({
-        required String routeId,
         required String stopId,
         required City city,
     }) async {
         final uri = Uri.parse('$apiBase/stop-departures').replace(
             queryParameters: {
                 'city': city.name.toLowerCase(),
-                'route_id': routeId,
                 'stop_id': stopId,
             });
 

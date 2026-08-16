@@ -30,6 +30,15 @@ class StopRepository(AsyncQueryRepository[StopModel]):
 
         return result.scalars().all()
 
+    async def get_sibling_stop_ids(self, stop_id: str) -> Sequence[str]:
+        name = select(self.model.name).where(self.model.id == stop_id).scalar_subquery()
+
+        query = select(distinct(self.model.id)).where(self.model.name == name)
+
+        result = await self.execute_select(query)
+
+        return result.scalars().all()
+
     async def get_route_stops(self, route_id: str) -> Sequence[Row]:
         query = (
             select(

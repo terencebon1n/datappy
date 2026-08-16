@@ -17,6 +17,21 @@ String formatWait(int departureTime, DateTime now) {
   return '$hours h ${(minutes % 60).toString().padLeft(2, '0')}';
 }
 
+Map<String, List<StopDeparture>> groupByDestination(
+  List<StopDeparture> departures,
+) {
+  final grouped = <String, List<StopDeparture>>{};
+  for (final departure in departures) {
+    final destination =
+        departure.headsign.isEmpty ? 'Direction inconnue' : departure.headsign;
+    grouped.putIfAbsent(destination, () => []).add(departure);
+  }
+  for (final list in grouped.values) {
+    list.sort((a, b) => a.departureTime.compareTo(b.departureTime));
+  }
+  return grouped;
+}
+
 class StopDetailsSheet extends StatelessWidget {
   const StopDetailsSheet({
     super.key,
@@ -107,50 +122,92 @@ class _Departures extends StatelessWidget {
       return SheetEmpty(text: 'Aucun départ prévu.');
     }
 
-    return Column(
-      children: [
-        for (final departure in state.departures)
-          _DepartureRow(
-            departure: departure,
-            routeColor: routeColor,
-            now: now,
-          ),
-      ],
+    final columns = groupByDestination(state.departures);
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final entry in columns.entries) ...[
+            if (entry.key != columns.keys.first)
+              VerticalDivider(
+                width: 21,
+                thickness: 0.5,
+                color: TransitColors.border,
+              ),
+            Expanded(
+              child: _DestinationColumn(
+                destination: entry.key,
+                departures: entry.value,
+                routeColor: routeColor,
+                now: now,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
 
-class _DepartureRow extends StatelessWidget {
-  const _DepartureRow({
-    required this.departure,
+class _DestinationColumn extends StatelessWidget {
+  const _DestinationColumn({
+    required this.destination,
+    required this.departures,
     required this.routeColor,
     required this.now,
   });
 
-  final StopDeparture departure;
+  final String destination;
+  final List<StopDeparture> departures;
   final Color routeColor;
   final DateTime now;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        children: [
-          Icon(Icons.arrow_right_rounded, size: 18, color: routeColor),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              departure.headsign.isEmpty ? 'Direction inconnue' : departure.headsign,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: TransitColors.textPrimary,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.arrow_right_rounded, size: 16, color: routeColor),
+            const SizedBox(width: 2),
+            Expanded(
+              child: Text(
+                destination,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: TransitColors.textPrimary,
+                ),
               ),
             ),
-          ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        for (final departure in departures)
+          _WaitRow(departure: departure, now: now),
+      ],
+    );
+  }
+}
+
+class _WaitRow extends StatelessWidget {
+  const _WaitRow({required this.departure, required this.now});
+
+  final StopDeparture departure;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          _LineBadge(departure: departure),
+          const SizedBox(width: 7),
           if (departure.isRealtime) ...[
             Container(
               width: 6,
@@ -160,20 +217,58 @@ class _DepartureRow extends StatelessWidget {
                 color: TransitColors.live,
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 5),
           ],
-          Text(
-            formatWait(departure.departureTime, now),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              fontFeatures: const [FontFeature.tabularFigures()],
-              color: departure.isRealtime
-                  ? TransitColors.live
-                  : TransitColors.textSecondary,
+          Expanded(
+            child: Text(
+              formatWait(departure.departureTime, now),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                fontFeatures: const [FontFeature.tabularFigures()],
+                color: departure.isRealtime
+                    ? TransitColors.live
+                    : TransitColors.textSecondary,
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LineBadge extends StatelessWidget {
+  const _LineBadge({required this.departure});
+
+  final StopDeparture departure;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = departure.routeColorValue == null
+        ? TransitColors.accent
+        : Color(departure.routeColorValue!);
+
+    return Container(
+      constraints: const BoxConstraints(minWidth: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        departure.routeShortName.isEmpty ? '?' : departure.routeShortName,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: TransitColors.textPrimary,
+        ),
       ),
     );
   }

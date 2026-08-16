@@ -103,6 +103,7 @@ def get_stop_departure_feed(session: GtfsSession) -> StopDepartureFeed:
         StopUpdateRepository(redis_db),
         StopTimeRepository(session),
         TripRepository(session),
+        StopRepository(session),
     )
 
 

@@ -12,6 +12,10 @@ const _base = 'https://api.test';
 
 Map<String, dynamic> _payload() => {
       'trip_id': 't1',
+      'route_id': 'T1',
+      'route_short_name': '1',
+      'route_color': '0080C0',
+      'route_type': 0,
       'direction_id': 0,
       'headsign': 'Mosson',
       'departure_time': 1700000000,
@@ -31,13 +35,12 @@ void main() {
     );
 
     await repo.resolveStopDepartures(
-      routeId: 'T1',
       stopId: 's1',
       city: City(name: 'Montpellier'),
     );
 
     expect(seen.url.path, '/stop-departures');
-    expect(seen.url.queryParameters['route_id'], 'T1');
+    expect(seen.url.queryParameters.containsKey('route_id'), isFalse);
     expect(seen.url.queryParameters['stop_id'], 's1');
     expect(seen.url.queryParameters['city'], 'montpellier');
     expect(seen.headers['City'], 'montpellier');
@@ -52,12 +55,14 @@ void main() {
     );
 
     final departures = await repo.resolveStopDepartures(
-      routeId: 'T1',
       stopId: 's1',
       city: City(name: 'Nimes'),
     );
 
     expect(departures.single.tripId, 't1');
+    expect(departures.single.routeShortName, '1');
+    expect(departures.single.routeColorValue, 0xFF0080C0);
+    expect(departures.single.routeTypeId, 0);
     expect(departures.single.headsign, 'Mosson');
     expect(departures.single.departureDelay, 30);
     expect(departures.single.isRealtime, isTrue);
@@ -71,7 +76,6 @@ void main() {
 
     expect(
       repo.resolveStopDepartures(
-        routeId: 'T1',
         stopId: 's1',
         city: City(name: 'Nimes'),
       ),
@@ -93,6 +97,17 @@ void main() {
     expect(response.headsign, '');
     expect(response.departureDelay, 0);
     expect(response.isRealtime, isFalse);
+    expect(response.routeShortName, '');
+    expect(response.routeColorValue, isNull);
+    expect(response.routeTypeId, 3);
     expect(response.toDomain().tripId, 't1');
+  });
+
+  test('parses route colours and tolerates junk', () {
+    expect(parseRouteColor('0080C0'), 0xFF0080C0);
+    expect(parseRouteColor('#0080C0'), 0xFF0080C0);
+    expect(parseRouteColor(null), isNull);
+    expect(parseRouteColor(''), isNull);
+    expect(parseRouteColor('not-a-colour'), isNull);
   });
 }

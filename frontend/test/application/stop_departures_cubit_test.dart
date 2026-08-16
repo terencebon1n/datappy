@@ -21,7 +21,7 @@ void main() {
     final cubit = StopDeparturesCubit(repo: repo);
     addTearDown(cubit.close);
 
-    await cubit.load(routeId: 'T1', stopId: 's9', city: sampleCity());
+    await cubit.load(stopId: 's9', city: sampleCity());
 
     expect(cubit.state.status, StopDeparturesStatus.ready);
     expect(cubit.state.departures.single.headsign, 'Mosson');
@@ -32,7 +32,7 @@ void main() {
     final cubit = StopDeparturesCubit(repo: FakeStopDepartureRepo());
     addTearDown(cubit.close);
 
-    await cubit.load(routeId: 'T1', stopId: 's1', city: sampleCity());
+    await cubit.load(stopId: 's1', city: sampleCity());
 
     expect(cubit.state.status, StopDeparturesStatus.ready);
     expect(cubit.state.departures, isEmpty);
@@ -44,7 +44,7 @@ void main() {
     );
     addTearDown(cubit.close);
 
-    await cubit.load(routeId: 'T1', stopId: 's1', city: sampleCity());
+    await cubit.load(stopId: 's1', city: sampleCity());
 
     expect(cubit.state.status, StopDeparturesStatus.error);
     expect(cubit.state.departures, isEmpty);
@@ -58,8 +58,8 @@ void main() {
     final seen = <StopDeparturesStatus>[];
     cubit.stream.listen((s) => seen.add(s.status));
 
-    await cubit.load(routeId: 'T1', stopId: 's1', city: sampleCity());
-    await cubit.load(routeId: 'T1', stopId: 's2', city: sampleCity());
+    await cubit.load(stopId: 's1', city: sampleCity());
+    await cubit.load(stopId: 's2', city: sampleCity());
     await Future<void>.delayed(Duration.zero);
 
     expect(seen, [

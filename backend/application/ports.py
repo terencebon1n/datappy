@@ -89,11 +89,16 @@ class RouteStopReader(Protocol):
     async def get_route_stops(self, route_id: str) -> Sequence[Any]: ...
 
 
+class SiblingStopReader(Protocol):
+    async def get_sibling_stop_ids(self, stop_id: str) -> Sequence[str]: ...
+
+
 class StopDepartureReader(Protocol):
+    async def get_stop_service_keys(self, stop_ids: list[str]) -> Sequence[Any]: ...
+
     async def get_stop_departures(
         self,
-        route_id: str,
-        stop_id: str,
+        stop_ids: list[str],
         after_clock: str,
         service_date: str,
         weekday: str,

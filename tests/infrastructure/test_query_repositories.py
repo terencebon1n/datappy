@@ -173,8 +173,7 @@ async def test_stop_time_get_stop_departures():
     repo = StopTimeRepository(session)
 
     rows = await repo.get_stop_departures(
-        route_id="r1",
-        stop_id="s1",
+        stop_ids=["s1", "s2"],
         after_clock="07:00:00",
         service_date="20260706",
         weekday="monday",
@@ -185,7 +184,24 @@ async def test_stop_time_get_stop_departures():
     compiled = str(session.execute.await_args.args[0])
     assert "trip.headsign" in compiled
     assert "trip.direction_id" in compiled
+    assert "route.short_name" in compiled
     assert "EXCEPT" in compiled
+    assert "trip.route_id = " not in compiled
+
+
+async def test_stop_time_get_stop_service_keys():
+    result = MagicMock()
+    result.all.return_value = [
+        SimpleNamespace(route_id="r1", direction_id=0, stop_id="s1")
+    ]
+    session = _session_returning(result)
+
+    rows = await StopTimeRepository(session).get_stop_service_keys(["s1", "s2"])
+
+    assert rows[0].route_id == "r1"
+    compiled = str(session.execute.await_args.args[0])
+    assert "DISTINCT" in compiled
+    assert "stop_time.stop_id IN" in compiled
 
 
 async def test_trip_get_trip_headsigns():
@@ -230,3 +246,17 @@ async def test_stop_get_route_stops_selects_metadata():
     assert "stop.code" in compiled
     assert "stop.platform_code" in compiled
     assert "stop.wheelchair_boarding" in compiled
+
+
+async def test_stop_get_sibling_stop_ids():
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = ["s1", "s2"]
+    session = _session_returning(result)
+
+    ids = await StopRepository(session).get_sibling_stop_ids("s1")
+
+    assert ids == ["s1", "s2"]
+    compiled = str(session.execute.await_args.args[0])
+    assert "DISTINCT" in compiled
+    assert "SELECT gtfs.stop.name" in compiled
+    assert "trip" not in compiled

@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlalchemy import CompoundSelect, Row, and_, except_, select, union
+from sqlalchemy import CompoundSelect, Row, and_, distinct, except_, select, union
 from sqlalchemy.orm import aliased
 
 from backend.domain.gtfs.scheduled_departure import ScheduledDeparture
@@ -8,6 +8,7 @@ from backend.infrastructure.database.postgres.models.calendar import CalendarMod
 from backend.infrastructure.database.postgres.models.calendar_date import (
     CalendarDateModel,
 )
+from backend.infrastructure.database.postgres.models.route import RouteModel
 from backend.infrastructure.database.postgres.models.stop_time import StopTimeModel
 from backend.infrastructure.database.postgres.models.trip import TripModel
 from backend.infrastructure.database.repository import AsyncQueryRepository
@@ -56,10 +57,24 @@ class StopTimeRepository(AsyncQueryRepository[StopTimeModel]):
             ),
         )
 
+    async def get_stop_service_keys(self, stop_ids: list[str]) -> Sequence[Row]:
+        query = (
+            select(
+                distinct(TripModel.route_id).label("route_id"),
+                TripModel.direction_id,
+                self.model.stop_id,
+            )
+            .join(TripModel, TripModel.id == self.model.trip_id)
+            .where(self.model.stop_id.in_(stop_ids))
+        )
+
+        result = await self.execute_select(query)
+
+        return result.all()
+
     async def get_stop_departures(
         self,
-        route_id: str,
-        stop_id: str,
+        stop_ids: list[str],
         after_clock: str,
         service_date: str,
         weekday: str,
@@ -71,13 +86,17 @@ class StopTimeRepository(AsyncQueryRepository[StopTimeModel]):
                 self.model.departure_time,
                 TripModel.direction_id,
                 TripModel.headsign,
+                TripModel.route_id,
+                RouteModel.short_name.label("route_short_name"),
+                RouteModel.color.label("route_color"),
+                RouteModel.type.label("route_type"),
             )
             .join(TripModel, TripModel.id == self.model.trip_id)
+            .join(RouteModel, RouteModel.id == TripModel.route_id)
             .where(
                 and_(
-                    self.model.stop_id == stop_id,
+                    self.model.stop_id.in_(stop_ids),
                     self.model.departure_time >= after_clock,
-                    TripModel.route_id == route_id,
                     TripModel.service_id.in_(
                         self._active_services(service_date, weekday)
                     ),
