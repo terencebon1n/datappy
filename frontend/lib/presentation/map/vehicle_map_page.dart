@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:frontend/application/route_selection/cubit.dart';
+import 'package:frontend/application/theme/cubit.dart';
 import 'package:frontend/application/vehicle_map/cubit.dart';
 import 'package:frontend/application/vehicle_map/state.dart';
 import 'package:frontend/domain/conveyance.dart';
@@ -14,8 +15,14 @@ import 'package:frontend/domain/vehicle_position.dart';
 import 'package:frontend/presentation/theme/colors.dart';
 
 const _fallbackCenter = LatLng(43.6108, 3.8767);
-const _tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const _userAgent = 'fr.datappy.app';
+
+const _lightBasemap =
+    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const _darkBasemap =
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+String basemapUrl({required bool isDark}) => isDark ? _darkBasemap : _lightBasemap;
 
 LatLngBounds? boundsFor(RouteGeometry? geometry) {
   final points = <LatLng>[
@@ -24,6 +31,14 @@ LatLngBounds? boundsFor(RouteGeometry? geometry) {
   ];
   if (points.isEmpty) return null;
   return LatLngBounds.fromPoints(points);
+}
+
+Color readableRouteColor(Conveyance line, {required bool isDark}) {
+  final color = Color(line.colorValue);
+  final luminance = color.computeLuminance();
+  if (isDark && luminance < 0.18) return TransitColors.accent;
+  if (!isDark && luminance > 0.82) return TransitColors.accent;
+  return color;
 }
 
 class VehicleMapPage extends StatelessWidget {
@@ -35,11 +50,17 @@ class VehicleMapPage extends StatelessWidget {
       (RouteSelectionCubit c) => c.state.selectedConveyance,
     );
     final state = context.watch<VehicleMapCubit>().state;
+    final isDark = resolveIsDark(context.watch<ThemeCubit>().state);
 
     return Column(
       children: [
         _MapHeader(line: line, vehicleCount: state.vehicles.length),
-        Expanded(child: _MapBody(state: state, line: line)),
+        Expanded(
+          child: ColoredBox(
+            color: TransitColors.bg,
+            child: _MapBody(state: state, line: line, isDark: isDark),
+          ),
+        ),
       ],
     );
   }
@@ -55,11 +76,23 @@ class _MapHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      color: TransitColors.surface,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: TransitColors.surface,
+        border: Border(bottom: BorderSide(color: TransitColors.border)),
+      ),
       child: Row(
         children: [
-          Icon(Icons.map_rounded, size: 18, color: TransitColors.accent),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: TransitColors.accentBg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: TransitColors.accentBorder),
+            ),
+            child: Icon(Icons.map_rounded, size: 16, color: TransitColors.accent),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -73,9 +106,50 @@ class _MapHeader extends StatelessWidget {
               ),
             ),
           ),
+          if (line != null) _VehicleCount(count: vehicleCount),
+        ],
+      ),
+    );
+  }
+}
+
+class _VehicleCount extends StatelessWidget {
+  const _VehicleCount({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final live = count > 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: live ? TransitColors.liveBg : TransitColors.surfaceHigh,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: live ? TransitColors.liveBorder : TransitColors.border,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: live ? TransitColors.live : TransitColors.textMuted,
+            ),
+          ),
+          const SizedBox(width: 6),
           Text(
-            vehicleCount == 1 ? '1 véhicule' : '$vehicleCount véhicules',
-            style: TextStyle(fontSize: 12, color: TransitColors.textSecondary),
+            count == 1 ? '1 véhicule' : '$count véhicules',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: live ? TransitColors.live : TransitColors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -84,10 +158,15 @@ class _MapHeader extends StatelessWidget {
 }
 
 class _MapBody extends StatelessWidget {
-  const _MapBody({required this.state, required this.line});
+  const _MapBody({
+    required this.state,
+    required this.line,
+    required this.isDark,
+  });
 
   final VehicleMapState state;
   final Conveyance? line;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -110,21 +189,27 @@ class _MapBody extends StatelessWidget {
     }
 
     final bounds = boundsFor(state.geometry);
-    final routeColor = Color(line!.colorValue);
+    final routeColor = readableRouteColor(line!, isDark: isDark);
 
     return FlutterMap(
       options: MapOptions(
+        backgroundColor: TransitColors.bg,
         initialCenter: _fallbackCenter,
         initialZoom: 12,
         initialCameraFit: bounds == null
             ? null
             : CameraFit.bounds(
                 bounds: bounds,
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.all(36),
               ),
       ),
       children: [
-        TileLayer(urlTemplate: _tileUrl, userAgentPackageName: _userAgent),
+        TileLayer(
+          urlTemplate: basemapUrl(isDark: isDark),
+          subdomains: const ['a', 'b', 'c', 'd'],
+          retinaMode: RetinaMode.isHighDensity(context),
+          userAgentPackageName: _userAgent,
+        ),
         PolylineLayer(
           polylines: [
             for (final shape in state.geometry?.shapes ?? const <RouteShape>[])
@@ -135,6 +220,8 @@ class _MapBody extends StatelessWidget {
                 ],
                 color: routeColor,
                 strokeWidth: 4,
+                borderColor: TransitColors.surface,
+                borderStrokeWidth: 2,
               ),
           ],
         ),
@@ -143,9 +230,9 @@ class _MapBody extends StatelessWidget {
             for (final stop in state.geometry?.stops ?? const <RouteStop>[])
               Marker(
                 point: LatLng(stop.latitude, stop.longitude),
-                width: 10,
-                height: 10,
-                child: const _StopDot(),
+                width: 9,
+                height: 9,
+                child: _StopDot(routeColor: routeColor),
               ),
           ],
         ),
@@ -154,8 +241,8 @@ class _MapBody extends StatelessWidget {
             for (final vehicle in state.vehicles)
               Marker(
                 point: LatLng(vehicle.latitude, vehicle.longitude),
-                width: 30,
-                height: 30,
+                width: 28,
+                height: 28,
                 child: _VehicleMarker(vehicle: vehicle, color: routeColor),
               ),
           ],
@@ -167,14 +254,16 @@ class _MapBody extends StatelessWidget {
 }
 
 class _StopDot extends StatelessWidget {
-  const _StopDot();
+  const _StopDot({required this.routeColor});
+
+  final Color routeColor;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: TransitColors.surface,
-          border: Border.all(color: TransitColors.textMuted, width: 2),
+          border: Border.all(color: routeColor, width: 2),
         ),
       );
 }
@@ -187,15 +276,26 @@ class _VehicleMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: vehicle.bearing * math.pi / 180,
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          border: Border.all(color: Colors.white, width: 2),
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        border: Border.all(color: TransitColors.surface, width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Transform.rotate(
+        angle: vehicle.bearing * math.pi / 180,
+        child: Icon(
+          Icons.navigation_rounded,
+          size: 14,
+          color: TransitColors.surface,
         ),
-        child: const Icon(Icons.navigation_rounded, size: 16, color: Colors.white),
       ),
     );
   }
@@ -205,11 +305,28 @@ class _Attribution extends StatelessWidget {
   const _Attribution();
 
   @override
-  Widget build(BuildContext context) => const RichAttributionWidget(
-        attributions: [
-          TextSourceAttribution('OpenStreetMap contributors'),
-        ],
-      );
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomRight,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 6, 6),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: TransitColors.surface.withValues(alpha: 0.82),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: TransitColors.border),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            child: Text(
+              '© OpenStreetMap · © CARTO',
+              style: TextStyle(fontSize: 9, color: TransitColors.textMuted),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _Notice extends StatelessWidget {
@@ -226,12 +343,25 @@ class _Notice extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 32, color: TransitColors.textMuted),
-            const SizedBox(height: 12),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: TransitColors.surfaceHigh,
+                shape: BoxShape.circle,
+                border: Border.all(color: TransitColors.border),
+              ),
+              child: Icon(icon, size: 22, color: TransitColors.textMuted),
+            ),
+            const SizedBox(height: 14),
             Text(
               text,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: TransitColors.textSecondary),
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: TransitColors.textSecondary,
+              ),
             ),
           ],
         ),

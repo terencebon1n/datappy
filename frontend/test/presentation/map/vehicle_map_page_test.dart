@@ -6,11 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:frontend/application/route_selection/cubit.dart';
+import 'package:frontend/application/theme/cubit.dart';
 import 'package:frontend/application/vehicle_map/cubit.dart';
 import 'package:frontend/domain/coordinates.dart';
 import 'package:frontend/domain/route_geometry.dart';
 import 'package:frontend/domain/transit_path.dart';
 import 'package:frontend/presentation/map/vehicle_map_page.dart';
+import 'package:frontend/presentation/theme/colors.dart';
 
 import '../../helpers/fakes.dart';
 import '../../helpers/pump.dart';
@@ -186,5 +188,99 @@ void main() {
     await _pump(tester, route: route, vehicleMap: vehicleMap);
 
     expect(find.byType(FlutterMap), findsOneWidget);
+  });
+
+  group('basemapUrl', () {
+    test('serves the light basemap in light mode', () {
+      expect(basemapUrl(isDark: false), contains('light_all'));
+    });
+
+    test('serves the dark basemap in dark mode', () {
+      expect(basemapUrl(isDark: true), contains('dark_all'));
+    });
+
+    test('keeps the retina placeholder', () {
+      expect(basemapUrl(isDark: false), contains('{r}'));
+      expect(basemapUrl(isDark: true), contains('{r}'));
+    });
+  });
+
+  group('readableRouteColor', () {
+    test('keeps a route colour with enough contrast', () {
+      TransitColors.apply(false);
+      final line = sampleConveyance(colorValue: 0xFF0080C0);
+
+      expect(readableRouteColor(line, isDark: false), const Color(0xFF0080C0));
+    });
+
+    test('replaces a near-black route colour on the dark basemap', () {
+      TransitColors.apply(true);
+      final line = sampleConveyance(colorValue: 0xFF000000);
+
+      expect(readableRouteColor(line, isDark: true), TransitColors.accent);
+    });
+
+    test('replaces a near-white route colour on the light basemap', () {
+      TransitColors.apply(false);
+      final line = sampleConveyance(colorValue: 0xFFFFFFFF);
+
+      expect(readableRouteColor(line, isDark: false), TransitColors.accent);
+    });
+
+    test('keeps a near-black route colour on the light basemap', () {
+      TransitColors.apply(false);
+      final line = sampleConveyance(colorValue: 0xFF000000);
+
+      expect(readableRouteColor(line, isDark: false), const Color(0xFF000000));
+    });
+
+    test('keeps a near-white route colour on the dark basemap', () {
+      TransitColors.apply(true);
+      final line = sampleConveyance(colorValue: 0xFFFFFFFF);
+
+      expect(readableRouteColor(line, isDark: true), const Color(0xFFFFFFFF));
+    });
+  });
+
+  testWidgets('renders the dark basemap under a dark theme', (tester) async {
+    final route = await _withLine(tester);
+    final theme = ThemeCubit(store: InMemoryThemeStore(), initial: ThemeMode.dark);
+    final vehicleMap = VehicleMapCubit(
+      vehicleRepo: FakeVehiclePositionRepo(),
+      geometryRepo: FakeRouteGeometryRepo(),
+    );
+    await tester.runAsync(() => vehicleMap.watch(_path()));
+
+    final cubits = TestCubits(
+      routeSelection: route,
+      vehicleMap: vehicleMap,
+      theme: theme,
+    );
+    addTearDown(cubits.close);
+    await pumpApp(tester, Scaffold(body: VehicleMapPage()), cubits: cubits);
+    await tester.pump();
+
+    final tiles = tester.widget<TileLayer>(find.byType(TileLayer));
+    expect(tiles.urlTemplate, contains('dark_all'));
+  });
+
+  testWidgets('shows an idle count badge before any vehicle arrives',
+      (tester) async {
+    final route = await _withLine(tester);
+    final vehicleMap = VehicleMapCubit(
+      vehicleRepo: FakeVehiclePositionRepo(),
+      geometryRepo: FakeRouteGeometryRepo(),
+    );
+    await tester.runAsync(() => vehicleMap.watch(_path()));
+
+    await _pump(tester, route: route, vehicleMap: vehicleMap);
+
+    expect(find.text('0 véhicules'), findsOneWidget);
+  });
+
+  testWidgets('hides the count badge until a line is chosen', (tester) async {
+    await _pump(tester);
+
+    expect(find.text('0 véhicules'), findsNothing);
   });
 }
