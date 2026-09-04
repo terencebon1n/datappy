@@ -5,14 +5,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:frontend/application/route_selection/cubit.dart';
 import 'package:frontend/application/stop_departures/cubit.dart';
 import 'package:frontend/application/theme/cubit.dart';
 import 'package:frontend/application/vehicle_map/cubit.dart';
 import 'package:frontend/application/vehicle_map/state.dart';
 import 'package:frontend/domain/conveyance.dart';
+import 'package:frontend/domain/coordinates.dart';
 import 'package:frontend/domain/route_geometry.dart';
 import 'package:frontend/domain/vehicle_position.dart';
+import 'package:frontend/presentation/map/line_picker_sheet.dart';
 import 'package:frontend/presentation/map/stop_details_sheet.dart';
 import 'package:frontend/presentation/map/vehicle_details_sheet.dart';
 import 'package:frontend/presentation/theme/colors.dart';
@@ -27,13 +28,42 @@ const _darkBasemap =
 
 String basemapUrl({required bool isDark}) => isDark ? _darkBasemap : _lightBasemap;
 
+const minimumFitSpanDegrees = 0.002;
+
+bool isPlottable(Coordinates point) =>
+    point.latitude.isFinite &&
+    point.longitude.isFinite &&
+    point.latitude.abs() <= 90 &&
+    point.longitude.abs() <= 180;
+
 LatLngBounds? boundsFor(RouteGeometry? geometry) {
   final points = <LatLng>[
     for (final shape in geometry?.shapes ?? const <RouteShape>[])
-      for (final point in shape.points) LatLng(point.latitude, point.longitude),
+      for (final point in shape.points)
+        if (isPlottable(point)) LatLng(point.latitude, point.longitude),
   ];
   if (points.isEmpty) return null;
-  return LatLngBounds.fromPoints(points);
+  return withMinimumSpan(LatLngBounds.fromPoints(points));
+}
+
+LatLngBounds withMinimumSpan(LatLngBounds bounds) {
+  final latitudePad =
+      math.max(0.0, (minimumFitSpanDegrees - (bounds.north - bounds.south)) / 2);
+  final longitudePad =
+      math.max(0.0, (minimumFitSpanDegrees - (bounds.east - bounds.west)) / 2);
+
+  if (latitudePad == 0 && longitudePad == 0) return bounds;
+
+  return LatLngBounds(
+    LatLng(
+      math.max(-90, bounds.south - latitudePad),
+      math.max(-180, bounds.west - longitudePad),
+    ),
+    LatLng(
+      math.min(90, bounds.north + latitudePad),
+      math.min(180, bounds.east + longitudePad),
+    ),
+  );
 }
 
 Color readableRouteColor(Conveyance line, {required bool isDark}) {
@@ -49,15 +79,17 @@ class VehicleMapPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final line = context.select(
-      (RouteSelectionCubit c) => c.state.selectedConveyance,
-    );
     final state = context.watch<VehicleMapCubit>().state;
+    final line = state.line;
     final isDark = resolveIsDark(context.watch<ThemeCubit>().state);
 
     return Column(
       children: [
-        _MapHeader(line: line, vehicleCount: state.vehicles.length),
+        _MapHeader(
+          line: line,
+          vehicleCount: state.vehicles.length,
+          canPickLine: state.canPickLine,
+        ),
         Expanded(
           child: ColoredBox(
             color: TransitColors.bg,
@@ -70,47 +102,67 @@ class VehicleMapPage extends StatelessWidget {
 }
 
 class _MapHeader extends StatelessWidget {
-  const _MapHeader({required this.line, required this.vehicleCount});
+  const _MapHeader({
+    required this.line,
+    required this.vehicleCount,
+    required this.canPickLine,
+  });
 
   final Conveyance? line;
   final int vehicleCount;
+  final bool canPickLine;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: TransitColors.surface,
-        border: Border(bottom: BorderSide(color: TransitColors.border)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: TransitColors.accentBg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: TransitColors.accentBorder),
-            ),
-            child: Icon(Icons.map_rounded, size: 16, color: TransitColors.accent),
+    return Material(
+      color: TransitColors.surface,
+      child: InkWell(
+        onTap: canPickLine ? () => openLinePicker(context) : null,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: TransitColors.border)),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              line == null ? 'Carte' : 'Ligne ${line!.shortName}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: TransitColors.textPrimary,
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: TransitColors.accentBg,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: TransitColors.accentBorder),
+                ),
+                child:
+                    Icon(Icons.map_rounded, size: 16, color: TransitColors.accent),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  line == null ? 'Choisir une ligne' : 'Ligne ${line!.shortName}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: TransitColors.textPrimary,
+                  ),
+                ),
+              ),
+              if (canPickLine)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Icon(
+                    Icons.unfold_more_rounded,
+                    size: 18,
+                    color: TransitColors.textSecondary,
+                  ),
+                ),
+              if (line != null) _VehicleCount(count: vehicleCount),
+            ],
           ),
-          if (line != null) _VehicleCount(count: vehicleCount),
-        ],
+        ),
       ),
     );
   }
@@ -174,9 +226,12 @@ class _MapBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (line == null) {
-      return const _Notice(
-        icon: Icons.search_rounded,
+      return _Notice(
+        icon: Icons.alt_route_rounded,
         text: 'Choisissez une ligne pour suivre ses véhicules en direct.',
+        action: state.canPickLine
+            ? _PickLineButton(onTap: () => openLinePicker(context))
+            : null,
       );
     }
 
@@ -236,6 +291,7 @@ class _MapBody extends StatelessWidget {
                 width: 26,
                 height: 26,
                 child: GestureDetector(
+                  key: Key('map-stop-${stop.id}'),
                   behavior: HitTestBehavior.opaque,
                   onTap: () => openStopDetails(context, stop, routeColor),
                   child: Center(
@@ -257,6 +313,7 @@ class _MapBody extends StatelessWidget {
                 width: 34,
                 height: 34,
                 child: GestureDetector(
+                  key: Key('map-vehicle-${vehicle.id}'),
                   behavior: HitTestBehavior.opaque,
                   onTap: () => openVehicleDetails(
                     context,
@@ -286,11 +343,11 @@ Future<void> openStopDetails(
   RouteStop stop,
   Color routeColor,
 ) {
-  final selection = context.read<RouteSelectionCubit>().state;
+  final city = context.read<VehicleMapCubit>().city;
   final departures = context.read<StopDeparturesCubit>();
 
-  if (selection.selectedCity != null) {
-    departures.load(stopId: stop.id, city: selection.selectedCity!);
+  if (city != null) {
+    departures.load(stopId: stop.id, city: city);
   }
 
   return showModalBottomSheet<void>(
@@ -401,11 +458,28 @@ class _Attribution extends StatelessWidget {
   }
 }
 
+class _PickLineButton extends StatelessWidget {
+  const _PickLineButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: const Icon(Icons.alt_route_rounded, size: 16),
+      label: const Text('Choisir une ligne'),
+      style: TextButton.styleFrom(foregroundColor: TransitColors.accent),
+    );
+  }
+}
+
 class _Notice extends StatelessWidget {
-  const _Notice({required this.icon, required this.text});
+  const _Notice({required this.icon, required this.text, this.action});
 
   final IconData icon;
   final String text;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -435,6 +509,7 @@ class _Notice extends StatelessWidget {
                 color: TransitColors.textSecondary,
               ),
             ),
+            if (action != null) ...[const SizedBox(height: 8), action!],
           ],
         ),
       ),

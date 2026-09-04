@@ -301,39 +301,76 @@ void main() {
     });
   });
 
-  group('groupByDestination', () {
-    test('keys columns by headsign', () {
-      final grouped = groupByDestination([
+  group('buildDepartureColumns', () {
+    test('one column per destination', () {
+      final columns = buildDepartureColumns([
         sampleStopDeparture(tripId: 'a', headsign: 'Mosson'),
         sampleStopDeparture(tripId: 'b', headsign: 'Odysseum'),
         sampleStopDeparture(tripId: 'c', headsign: 'Mosson'),
       ]);
 
-      expect(grouped.keys, ['Mosson', 'Odysseum']);
-      expect(grouped['Mosson'], hasLength(2));
-      expect(grouped['Odysseum'], hasLength(1));
+      expect(columns.map((c) => c.destination), ['Mosson', 'Odysseum']);
+      expect(columns.first.departures, hasLength(2));
+    });
+
+    test('never mixes transit types into one column', () {
+      final columns = buildDepartureColumns([
+        sampleStopDeparture(tripId: 'tram', routeTypeId: 0, headsign: 'Gare'),
+        sampleStopDeparture(tripId: 'bus', routeTypeId: 3, headsign: 'Gare'),
+      ]);
+
+      expect(columns, hasLength(2));
+      expect(columns.map((c) => c.routeTypeId), [0, 3]);
+      expect(columns.every((c) => c.destination == 'Gare'), isTrue);
+      expect(columns.first.departures.single.tripId, 'tram');
+      expect(columns.last.departures.single.tripId, 'bus');
+    });
+
+    test('keeps transit types together, soonest first within a type', () {
+      final columns = buildDepartureColumns([
+        sampleStopDeparture(
+          tripId: 'bus-early',
+          routeTypeId: 3,
+          headsign: 'Jacou',
+          departureTime: _nowEpoch + 60,
+        ),
+        sampleStopDeparture(
+          tripId: 'tram-late',
+          routeTypeId: 0,
+          headsign: 'Mosson',
+          departureTime: _nowEpoch + 900,
+        ),
+        sampleStopDeparture(
+          tripId: 'tram-soon',
+          routeTypeId: 0,
+          headsign: 'Odysseum',
+          departureTime: _nowEpoch + 300,
+        ),
+      ]);
+
+      expect(
+        columns.map((c) => c.destination),
+        ['Odysseum', 'Mosson', 'Jacou'],
+      );
     });
 
     test('sorts each column by departure time', () {
-      final grouped = groupByDestination([
+      final columns = buildDepartureColumns([
         sampleStopDeparture(tripId: 'late', departureTime: _nowEpoch + 600),
         sampleStopDeparture(tripId: 'soon', departureTime: _nowEpoch + 60),
       ]);
 
-      expect(
-        grouped['Mosson']!.map((d) => d.tripId),
-        ['soon', 'late'],
-      );
+      expect(columns.single.departures.map((d) => d.tripId), ['soon', 'late']);
     });
 
     test('labels a missing headsign', () {
-      final grouped = groupByDestination([sampleStopDeparture(headsign: '')]);
+      final columns = buildDepartureColumns([sampleStopDeparture(headsign: '')]);
 
-      expect(grouped.keys, ['Direction inconnue']);
+      expect(columns.single.destination, 'Direction inconnue');
     });
 
     test('yields nothing for no departures', () {
-      expect(groupByDestination([]), isEmpty);
+      expect(buildDepartureColumns([]), isEmpty);
     });
   });
 
@@ -505,6 +542,83 @@ void main() {
       );
 
       expect(find.text('?'), findsOneWidget);
+    });
+  });
+
+  group('StopDetailsSheet scrolling', () {
+    testWidgets('scrolls horizontally when the columns overflow',
+        (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(departures: [
+          for (var i = 0; i < 6; i++)
+            sampleStopDeparture(
+              tripId: 'trip-$i',
+              routeShortName: '$i',
+              headsign: 'Destination $i',
+              departureTime: _nowEpoch + 60 * (i + 1),
+            ),
+        ]),
+      );
+
+      final scroller = tester.widget<SingleChildScrollView>(
+        find.byType(SingleChildScrollView),
+      );
+      expect(scroller.scrollDirection, Axis.horizontal);
+
+      expect(find.text('Destination 0'), findsOneWidget);
+      await tester.drag(
+        find.byType(SingleChildScrollView),
+        const Offset(-400, 0),
+      );
+      await tester.pump();
+
+      expect(find.text('Destination 5'), findsOneWidget);
+    });
+
+    testWidgets('gives every column the same width', (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(departures: [
+          sampleStopDeparture(tripId: 'a', headsign: 'Mosson'),
+          sampleStopDeparture(tripId: 'b', headsign: 'Odysseum'),
+        ]),
+      );
+
+      final widths = tester
+          .widgetList<SizedBox>(find.byType(SizedBox))
+          .where((box) => box.width == departureColumnWidth);
+
+      expect(widths, hasLength(2));
+    });
+
+    testWidgets('a tram and a bus to the same place get separate columns',
+        (tester) async {
+      await _pumpStopSheet(
+        tester,
+        stop: _stop(),
+        repo: FakeStopDepartureRepo(departures: [
+          sampleStopDeparture(
+            tripId: 'tram',
+            routeTypeId: 0,
+            routeShortName: '1',
+            headsign: 'Gare',
+          ),
+          sampleStopDeparture(
+            tripId: 'bus',
+            routeTypeId: 3,
+            routeShortName: '9',
+            headsign: 'Gare',
+          ),
+        ]),
+      );
+
+      expect(find.text('Gare'), findsNWidgets(2));
+      expect(find.byIcon(Icons.tram), findsOneWidget);
+      expect(find.byIcon(Icons.directions_bus), findsOneWidget);
+      expect(find.byType(VerticalDivider), findsOneWidget);
     });
   });
 }

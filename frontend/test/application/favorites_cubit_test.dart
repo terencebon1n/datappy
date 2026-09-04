@@ -65,10 +65,10 @@ void main() {
     await cubit.close();
   });
 
-  test('reorder onto the same slot is a no-op', () async {
+  test('reorder takes already-adjusted indices, so 0 -> 1 swaps', () async {
     final cubit = await seeded([a, b]);
     cubit.reorder(0, 1);
-    expect(cubit.state, [a, b]);
+    expect(cubit.state, [b, a]);
     await cubit.close();
   });
 }

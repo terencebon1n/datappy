@@ -35,7 +35,6 @@ class FavoritesCubit extends Cubit<List<SavedSelection>> {
     }
 
     void reorder(int oldIndex, int newIndex) {
-        if (newIndex > oldIndex) newIndex -= 1;
         if (oldIndex == newIndex) return;
         final next = [...state];
         next.insert(newIndex, next.removeAt(oldIndex));

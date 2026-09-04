@@ -93,6 +93,7 @@ Widget buildDatappyApp({
             BlocProvider(create: (context) => VehicleMapCubit(
                 vehicleRepo: vehicleRepo,
                 geometryRepo: geometryRepo,
+                conveyanceRepo: conveyanceRepo,
             )),
             BlocProvider(create: (context) => StopDeparturesCubit(
                 repo: stopDepartureRepo,

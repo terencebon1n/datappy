@@ -92,6 +92,7 @@ class TestCubits {
             VehicleMapCubit(
               vehicleRepo: FakeVehiclePositionRepo(),
               geometryRepo: FakeRouteGeometryRepo(),
+              conveyanceRepo: FakeConveyanceRepo(),
             ),
         stopDepartures =
             stopDepartures ?? StopDeparturesCubit(repo: FakeStopDepartureRepo());

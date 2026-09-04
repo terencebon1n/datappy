@@ -37,7 +37,7 @@ class FavoritesPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(14, 4, 14, 100),
                 buildDefaultDragHandles: false,
                 itemCount: favorites.length,
-                onReorder: (oldIndex, newIndex) =>
+                onReorderItem: (oldIndex, newIndex) =>
                     context.read<FavoritesCubit>().reorder(oldIndex, newIndex),
                 itemBuilder: (context, i) {
                   final fav = favorites[i];

@@ -113,8 +113,11 @@ void main() {
     final route = _route();
     final vehicles = FakeVehiclePositionRepo();
     final geometry = FakeRouteGeometryRepo();
-    final vehicleMap =
-        VehicleMapCubit(vehicleRepo: vehicles, geometryRepo: geometry);
+    final vehicleMap = VehicleMapCubit(
+      vehicleRepo: vehicles,
+      geometryRepo: geometry,
+      conveyanceRepo: FakeConveyanceRepo(conveyances: [sampleConveyance()]),
+    );
     final cubits = TestCubits(routeSelection: route, vehicleMap: vehicleMap);
     addTearDown(cubits.close);
 
@@ -136,12 +139,13 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('the map tab does nothing without a complete selection',
+  testWidgets('the map tab loads nothing without a city',
       (tester) async {
     final geometry = FakeRouteGeometryRepo();
     final vehicleMap = VehicleMapCubit(
       vehicleRepo: FakeVehiclePositionRepo(),
       geometryRepo: geometry,
+      conveyanceRepo: FakeConveyanceRepo(conveyances: [sampleConveyance()]),
     );
     final cubits = TestCubits(vehicleMap: vehicleMap);
     addTearDown(cubits.close);

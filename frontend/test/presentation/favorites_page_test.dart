@@ -86,7 +86,7 @@ void main() {
     expect(favorites.state, hasLength(1));
   });
 
-  testWidgets('onReorder rewires the list order', (tester) async {
+  testWidgets('onReorderItem rewires the list order', (tester) async {
     final favorites = await _seeded(tester, [_fav('Alpha', 'Beta'), _fav('Gamma', 'Delta')]);
     final cubits = TestCubits(favorites: favorites);
     addTearDown(cubits.close);
@@ -95,7 +95,7 @@ void main() {
     await tester.pump();
 
     final list = tester.widget<ReorderableListView>(find.byType(ReorderableListView));
-    list.onReorder(0, 2);
+    list.onReorderItem!(0, 1);
     await tester.pump();
 
     expect(favorites.state.first, _fav('Gamma', 'Delta'));

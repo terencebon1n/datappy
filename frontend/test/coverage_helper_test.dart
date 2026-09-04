@@ -77,6 +77,7 @@ import 'package:frontend/presentation/funnel/funnel_widgets.dart';
 import 'package:frontend/presentation/funnel/line_step.dart';
 import 'package:frontend/presentation/funnel/nearby_step.dart';
 import 'package:frontend/presentation/funnel/stop_step.dart';
+import 'package:frontend/presentation/map/line_picker_sheet.dart';
 import 'package:frontend/presentation/map/sheet_widgets.dart';
 import 'package:frontend/presentation/map/stop_details_sheet.dart';
 import 'package:frontend/presentation/map/vehicle_details_sheet.dart';

@@ -51,10 +51,10 @@ void main() {
   final b = _fav('B');
   final c = _fav('C');
 
-  test('reorder moves an item down (ReorderableListView index convention)', () async {
+  test('reorder moves an item down', () async {
     final cubit = await _seeded([a, b, c]);
 
-    cubit.reorder(0, 3); // drag A past the end of the list
+    cubit.reorder(0, 2); // drag A to the end of the list
 
     expect(cubit.state, [b, c, a]);
     await cubit.close();
@@ -74,7 +74,7 @@ void main() {
     final cubit = FavoritesCubit(store: store);
     await Future<void>.delayed(Duration.zero);
 
-    cubit.reorder(0, 3);
+    cubit.reorder(0, 2);
 
     expect(store.saved, [b, c, a]);
     await cubit.close();
@@ -83,7 +83,7 @@ void main() {
   test('reorder onto the same slot is a no-op', () async {
     final cubit = await _seeded([a, b]);
 
-    cubit.reorder(0, 1); // newIndex collapses back to 0
+    cubit.reorder(0, 0);
 
     expect(cubit.state, [a, b]);
     await cubit.close();

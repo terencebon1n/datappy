@@ -109,12 +109,10 @@ class _TransitDashboardState extends State<TransitDashboard> {
 
   void _watchVehicles() {
     final selection = context.read<RouteSelectionCubit>().state;
-    if (!selection.canSubmit) return;
-    context.read<VehicleMapCubit>().watch(TransitPath(
-          city: selection.selectedCity!.name.toLowerCase(),
-          routeId: selection.selectedConveyance!.id,
-          direction: selection.direction!,
-        ));
+    context.read<VehicleMapCubit>().open(
+          city: selection.selectedCity,
+          fallbackLine: selection.selectedConveyance,
+        );
   }
 
   void _loadFavorite(SavedSelection fav) {

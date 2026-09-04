@@ -5,6 +5,7 @@ import 'package:frontend/application/stop_departures/cubit.dart';
 import 'package:frontend/application/stop_departures/state.dart';
 import 'package:frontend/domain/route_geometry.dart';
 import 'package:frontend/domain/stop_departure.dart';
+import 'package:frontend/presentation/funnel/funnel_colors.dart' show styleForType;
 import 'package:frontend/presentation/map/sheet_widgets.dart';
 import 'package:frontend/presentation/theme/colors.dart';
 
@@ -17,19 +18,48 @@ String formatWait(int departureTime, DateTime now) {
   return '$hours h ${(minutes % 60).toString().padLeft(2, '0')}';
 }
 
-Map<String, List<StopDeparture>> groupByDestination(
-  List<StopDeparture> departures,
-) {
-  final grouped = <String, List<StopDeparture>>{};
+const departureColumnWidth = 138.0;
+
+class DepartureColumn {
+  const DepartureColumn({
+    required this.routeTypeId,
+    required this.destination,
+    required this.departures,
+  });
+
+  final int routeTypeId;
+  final String destination;
+  final List<StopDeparture> departures;
+
+  int get soonest => departures.first.departureTime;
+}
+
+List<DepartureColumn> buildDepartureColumns(List<StopDeparture> departures) {
+  final grouped = <(int, String), List<StopDeparture>>{};
   for (final departure in departures) {
     final destination =
         departure.headsign.isEmpty ? 'Direction inconnue' : departure.headsign;
-    grouped.putIfAbsent(destination, () => []).add(departure);
+    grouped
+        .putIfAbsent((departure.routeTypeId, destination), () => [])
+        .add(departure);
   }
-  for (final list in grouped.values) {
-    list.sort((a, b) => a.departureTime.compareTo(b.departureTime));
+
+  final columns = <DepartureColumn>[];
+  for (final entry in grouped.entries) {
+    final sorted = [...entry.value]
+      ..sort((a, b) => a.departureTime.compareTo(b.departureTime));
+    columns.add(DepartureColumn(
+      routeTypeId: entry.key.$1,
+      destination: entry.key.$2,
+      departures: sorted,
+    ));
   }
-  return grouped;
+
+  columns.sort((a, b) {
+    final byType = a.routeTypeId.compareTo(b.routeTypeId);
+    return byType != 0 ? byType : a.soonest.compareTo(b.soonest);
+  });
+  return columns;
 }
 
 class StopDetailsSheet extends StatelessWidget {
@@ -122,29 +152,32 @@ class _Departures extends StatelessWidget {
       return SheetEmpty(text: 'Aucun départ prévu.');
     }
 
-    final columns = groupByDestination(state.departures);
+    final columns = buildDepartureColumns(state.departures);
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final entry in columns.entries) ...[
-            if (entry.key != columns.keys.first)
-              VerticalDivider(
-                width: 21,
-                thickness: 0.5,
-                color: TransitColors.border,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final column in columns) ...[
+              if (column != columns.first)
+                VerticalDivider(
+                  width: 21,
+                  thickness: 0.5,
+                  color: TransitColors.border,
+                ),
+              SizedBox(
+                width: departureColumnWidth,
+                child: _DestinationColumn(
+                  column: column,
+                  routeColor: routeColor,
+                  now: now,
+                ),
               ),
-            Expanded(
-              child: _DestinationColumn(
-                destination: entry.key,
-                departures: entry.value,
-                routeColor: routeColor,
-                now: now,
-              ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -152,14 +185,12 @@ class _Departures extends StatelessWidget {
 
 class _DestinationColumn extends StatelessWidget {
   const _DestinationColumn({
-    required this.destination,
-    required this.departures,
+    required this.column,
     required this.routeColor,
     required this.now,
   });
 
-  final String destination;
-  final List<StopDeparture> departures;
+  final DepartureColumn column;
   final Color routeColor;
   final DateTime now;
 
@@ -170,11 +201,15 @@ class _DestinationColumn extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.arrow_right_rounded, size: 16, color: routeColor),
-            const SizedBox(width: 2),
+            Icon(
+              styleForType(column.routeTypeId).icon,
+              size: 14,
+              color: routeColor,
+            ),
+            const SizedBox(width: 5),
             Expanded(
               child: Text(
-                destination,
+                column.destination,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -187,7 +222,7 @@ class _DestinationColumn extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        for (final departure in departures)
+        for (final departure in column.departures)
           _WaitRow(departure: departure, now: now),
       ],
     );

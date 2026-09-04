@@ -99,11 +99,17 @@ class FakeCityRepo implements ICityRepository {
 }
 
 class FakeConveyanceRepo implements IConveyanceRepository {
-  FakeConveyanceRepo({this.conveyances = const []});
+  FakeConveyanceRepo({this.conveyances = const [], this.throwError = false});
   final List<Conveyance> conveyances;
+  final bool throwError;
+  final List<City> calls = [];
 
   @override
-  Future<List<Conveyance>> resolveConveyances(City city) async => conveyances;
+  Future<List<Conveyance>> resolveConveyances(City city) async {
+    calls.add(city);
+    if (throwError) throw Exception('conveyances boom');
+    return conveyances;
+  }
 }
 
 class FakeStopNameRepo implements IStopNameRepository {
